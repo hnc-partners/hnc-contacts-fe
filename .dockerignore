@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+dist
+build
+coverage
+
+# Development files
+*.log
+*.md
+!README.md
+.env*
+.git
+.gitignore
+.vscode
+.idea
+
+# Tests (don't need in production image)
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+__tests__
+tests
+
+# Docker files (don't need inside container)
+Dockerfile*
+docker-compose*
+.dockerignore

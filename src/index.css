@@ -1,0 +1,130 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Typography */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* Base (zinc) - Light Mode */
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 5.9% 10%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+
+  /* Brand - Steel Blue (V3 Design System) */
+  --primary: 206 31% 39%;
+  --primary-foreground: 0 0% 100%;
+  --brand: 206 31% 39%;
+  --brand-foreground: 0 0% 100%;
+
+  /* Semantic - Light Mode (muted/opal variants) */
+  --destructive: 0 60% 47%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 154 53% 37%;
+  --success-foreground: 0 0% 100%;
+  --warning: 28 68% 54%;
+  --warning-foreground: 0 0% 0%;
+  --info: 213 68% 54%;
+  --info-foreground: 0 0% 100%;
+
+  /* Utility */
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 90%;
+  --ring: 206 31% 39%;
+
+  /* Radius */
+  --radius: 0.5rem;
+  --radius-sm: 0.25rem;
+  --radius-lg: 0.75rem;
+  --radius-full: 9999px;
+}
+
+.dark {
+  /* Base - Dark Mode (Notion-style neutral grays) */
+  --background: 0 0% 10%;           /* #191919 - main background */
+  --foreground: 0 0% 88%;           /* #e1e1e1 - softer than pure white */
+  --card: 0 0% 15%;                 /* #262626 - elevated surfaces */
+  --card-foreground: 0 0% 88%;      /* #e1e1e1 */
+  --popover: 0 0% 15%;              /* #262626 - dropdowns, menus */
+  --popover-foreground: 0 0% 88%;   /* #e1e1e1 */
+  --muted: 0 0% 18%;                /* #2d2d2d - subtle backgrounds */
+  --muted-foreground: 0 0% 61%;     /* #9b9b9b - secondary text */
+  --accent: 0 0% 18%;               /* #2d2d2d */
+  --accent-foreground: 0 0% 88%;    /* #e1e1e1 */
+  --secondary: 0 0% 18%;            /* #2d2d2d */
+  --secondary-foreground: 0 0% 88%; /* #e1e1e1 */
+
+  /* Brand - Steel Blue (slightly lighter for dark mode) */
+  --primary: 206 31% 50%;
+  --primary-foreground: 0 0% 100%;
+  --brand: 206 31% 50%;
+  --brand-foreground: 0 0% 100%;
+
+  /* Semantic - Dark Mode (brighter for contrast) */
+  --destructive: 0 76% 62%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 152 33% 50%;
+  --success-foreground: 0 0% 100%;
+  --warning: 29 77% 64%;
+  --warning-foreground: 0 0% 0%;
+  --info: 213 75% 63%;
+  --info-foreground: 0 0% 100%;
+
+  /* Utility */
+  --border: 0 0% 18%;               /* #2f2f2f - subtle borders */
+  --input: 0 0% 18%;                /* #2f2f2f */
+  --ring: 206 31% 50%;
+}
+
+/* Media query fallback for portals (Radix UI components) */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    /* Notion-style neutral grays */
+    --background: 0 0% 10%;
+    --foreground: 0 0% 88%;
+    --card: 0 0% 15%;
+    --card-foreground: 0 0% 88%;
+    --popover: 0 0% 15%;
+    --popover-foreground: 0 0% 88%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 61%;
+    --accent: 0 0% 18%;
+    --accent-foreground: 0 0% 88%;
+    --secondary: 0 0% 18%;
+    --secondary-foreground: 0 0% 88%;
+    --primary: 206 31% 50%;
+    --primary-foreground: 0 0% 100%;
+    --brand: 206 31% 50%;
+    --brand-foreground: 0 0% 100%;
+    --destructive: 0 76% 62%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 33% 50%;
+    --success-foreground: 0 0% 100%;
+    --warning: 29 77% 64%;
+    --warning-foreground: 0 0% 0%;
+    --info: 213 75% 63%;
+    --info-foreground: 0 0% 100%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 206 31% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
