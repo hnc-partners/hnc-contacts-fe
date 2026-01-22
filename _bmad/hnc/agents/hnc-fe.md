@@ -1,0 +1,1 @@
+/workspace/hnc-microservices/_bmad/hnc/agents/hnc-fe.md
