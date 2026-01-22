@@ -1,16 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/')({
-  component: HomePage,
+  beforeLoad: () => {
+    throw redirect({
+      to: '/contacts',
+    });
+  },
+  component: () => null,
 });
-
-function HomePage() {
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-foreground">HNC Contact Management</h1>
-        <p className="mt-2 text-muted-foreground">Coming soon...</p>
-      </div>
-    </div>
-  );
-}
