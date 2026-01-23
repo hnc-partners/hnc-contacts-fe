@@ -7,6 +7,7 @@ import { Modal, ConfirmModal } from '@/components/Modal';
 import { ContactForm } from '@/components/ContactForm';
 import { RoleBadge } from '@/components/RoleBadge';
 import { RoleForm } from '@/components/RoleForm';
+import { FilterDropdown } from '@/components/FilterDropdown';
 import { contactsApi, rolesApi } from '@/services/contacts-api';
 import type { Contact, ContactWithDetails, ContactType, ContactStatus, CreateContactDto, UpdateContactDto, RoleType, Player, Partner, HncMember, CreatePlayerDto, CreatePartnerDto, CreateHncMemberDto, UpdatePlayerDto, UpdatePartnerDto, UpdateHncMemberDto } from '@/types/contacts';
 import { STATUS_COLORS } from '@/types/contacts';
@@ -403,65 +404,37 @@ function ContactsPage() {
                 </div>
               </div>
 
-              {/* Collapsible Filters Row with Animation */}
-              <div
-                className={`grid transition-all duration-200 ease-out ${
-                  filtersExpanded ? 'grid-rows-[1fr] opacity-100 mb-3' : 'grid-rows-[0fr] opacity-0'
-                }`}
-              >
-                <div className="overflow-hidden">
-                  <div className="flex items-center gap-3 pt-0.5">
-                    {/* Type Filter */}
-                    <div className="relative">
-                      <select
-                        value={filterType}
-                        onChange={(e) => {
-                          setFilterType(e.target.value as ContactType | '');
-                          setCurrentPage(1);
-                        }}
-                        className="h-9 rounded-md border border-input bg-background pl-3 pr-8 text-sm appearance-none cursor-pointer min-w-[150px]"
-                      >
-                        {TYPE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                    </div>
+              {/* Filters Row */}
+              {filtersExpanded && (
+                <div className="flex items-center gap-3 mb-3">
+                  {/* Type Filter */}
+                  <FilterDropdown
+                    label="Type"
+                    value={filterType}
+                    options={TYPE_OPTIONS}
+                    onChange={(v) => { setFilterType(v as ContactType | ''); setCurrentPage(1); }}
+                  />
 
-                    {/* Status Filter */}
-                    <div className="relative">
-                      <select
-                        value={filterStatus}
-                        onChange={(e) => {
-                          setFilterStatus(e.target.value as ContactStatus | '');
-                          setCurrentPage(1);
-                        }}
-                        className="h-9 rounded-md border border-input bg-background pl-3 pr-8 text-sm appearance-none cursor-pointer min-w-[150px]"
-                      >
-                        {STATUS_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                    </div>
+                  {/* Status Filter */}
+                  <FilterDropdown
+                    label="Status"
+                    value={filterStatus}
+                    options={STATUS_OPTIONS}
+                    onChange={(v) => { setFilterStatus(v as ContactStatus | ''); setCurrentPage(1); }}
+                  />
 
-                    {/* Clear All Button */}
-                    {hasActiveFilters && (
-                      <button
-                        onClick={clearFilters}
-                        className="inline-flex items-center gap-1.5 h-9 px-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                        Clear all
-                      </button>
-                    )}
-                  </div>
+                  {/* Clear All Button */}
+                  {hasActiveFilters && (
+                    <button
+                      onClick={clearFilters}
+                      className="inline-flex items-center gap-1.5 h-8 px-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      Clear all
+                    </button>
+                  )}
                 </div>
-              </div>
+              )}
 
               {/* Loading State */}
               {isLoading && (
@@ -1107,14 +1080,16 @@ function SidePanelContent({
   return (
     <div className="h-full bg-background border-l border-border flex flex-col">
       {/* Header with contact name and close button */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <div className="flex items-center gap-2">
-          {contact.contactType === 'person' ? (
-            <User className="h-5 w-5 text-muted-foreground" />
-          ) : (
-            <Building2 className="h-5 w-5 text-muted-foreground" />
-          )}
-          <h3 className="text-base font-semibold text-foreground">{contact.displayName}</h3>
+      <div className="flex items-center justify-between px-4 py-4 bg-muted/50 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-teal-100 dark:bg-teal-900/30">
+            {contact.contactType === 'person' ? (
+              <User className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+            ) : (
+              <Building2 className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+            )}
+          </div>
+          <h3 className="text-lg font-semibold text-foreground">{contact.displayName}</h3>
         </div>
         <button
           onClick={onClose}
@@ -1276,6 +1251,7 @@ function SidePanelContent({
                 >
                   <RoleForm
                     contactId={contact.id}
+                    contactName={contact.displayName}
                     existingRoleTypes={existingRoleTypes}
                     onSubmit={handleAddRole}
                     onCancel={() => setIsAddRoleModalOpen(false)}

@@ -79,6 +79,7 @@ const ROLE_TYPE_CONFIG: Record<RoleType, { label: string; icon: React.ReactNode 
 
 interface RoleFormProps {
   contactId: string;
+  contactName?: string;
   existingRoleTypes: RoleType[];
   onSubmit: (roleType: RoleType, data: any) => void;
   onCancel: () => void;
@@ -97,6 +98,7 @@ interface RoleFormProps {
  */
 export function RoleForm({
   contactId,
+  contactName,
   existingRoleTypes,
   onSubmit,
   onCancel,
@@ -124,7 +126,7 @@ export function RoleForm({
         paymentMethod: player.paymentMethod || '',
       };
     }
-    return { shortName: '', playerStatus: 'active', preferredCurrency: '', paymentMethod: '' };
+    return { shortName: contactName || '', playerStatus: 'active', preferredCurrency: '', paymentMethod: '' };
   };
 
   const getEditPartnerData = (): PartnerFormData => {
@@ -137,7 +139,7 @@ export function RoleForm({
         canBeDownstream: partner.canBeDownstream,
       };
     }
-    return { shortName: '', partnerStatus: 'active', canBeUpstream: false, canBeDownstream: false };
+    return { shortName: contactName || '', partnerStatus: 'active', canBeUpstream: false, canBeDownstream: false };
   };
 
   const getEditHncMemberData = (): HncMemberFormData => {
@@ -151,7 +153,7 @@ export function RoleForm({
         department: member.department || '',
       };
     }
-    return { fullName: '', memberType: '' as 'founder' | 'employee', memberCode: '', joinedDate: new Date().toISOString().split('T')[0], department: '' };
+    return { fullName: contactName || '', memberType: 'employee' as 'founder' | 'employee', memberCode: '', joinedDate: new Date().toISOString().split('T')[0], department: '' };
   };
 
   const [playerData, setPlayerData] = useState<PlayerFormData>(getEditPlayerData());
@@ -277,7 +279,7 @@ export function RoleForm({
                 }
               }}
               disabled={disabled}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all ${
                 isActive
                   ? 'bg-background text-foreground shadow-sm'
                   : disabled
@@ -302,7 +304,7 @@ export function RoleForm({
       )}
 
       {!allRolesAssigned && (
-        <>
+        <div className="min-h-[370px]">
           {roleType === 'player' && (
             <div className="space-y-4">
               <div>
@@ -529,7 +531,7 @@ export function RoleForm({
               </div>
             </div>
           )}
-        </>
+        </div>
       )}
 
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
