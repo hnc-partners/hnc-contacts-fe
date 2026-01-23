@@ -63,6 +63,15 @@ const TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'organization', label: 'Organization' },
 ];
 
+// Join Date filter options
+const JOIN_DATE_OPTIONS: { value: string; label: string }[] = [
+  { value: '', label: 'All' },
+  { value: 'last_30_days', label: 'Last 30 Days' },
+  { value: 'last_90_days', label: 'Last 90 Days' },
+  { value: 'this_year', label: 'This Year' },
+  { value: 'last_year', label: 'Last Year' },
+];
+
 // Rows per page options
 const ROWS_PER_PAGE_OPTIONS = [10, 20, 50];
 
@@ -82,6 +91,7 @@ function ContactsPage() {
   // UI State
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [selectedContactDetails, setSelectedContactDetails] = useState<ContactWithDetails | null>(null);
+  const [sidePanelTab, setSidePanelTab] = useState<SidePanelTab>('details');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<ContactWithDetails | null>(null);
   const [deletingContact, setDeletingContact] = useState<Contact | null>(null);
@@ -90,6 +100,7 @@ function ContactsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<ContactStatus | ''>('');
   const [filterType, setFilterType] = useState<ContactType | ''>('');
+  const [joinDateFilter, setJoinDateFilter] = useState('');
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // Pagination State
@@ -244,10 +255,11 @@ function ContactsPage() {
     setSearchQuery('');
     setFilterStatus('');
     setFilterType('');
+    setJoinDateFilter('');
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = searchQuery || filterStatus || filterType;
+  const hasActiveFilters = searchQuery || filterStatus || filterType || joinDateFilter;
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -362,7 +374,7 @@ function ContactsPage() {
                     Filters
                     {hasActiveFilters && (
                       <span className="px-1.5 py-0.5 text-xs bg-teal-400/80 text-white rounded-full">
-                        {(filterStatus ? 1 : 0) + (filterType ? 1 : 0)}
+                        {(filterStatus ? 1 : 0) + (filterType ? 1 : 0) + (joinDateFilter ? 1 : 0)}
                       </span>
                     )}
                     <ChevronDown className={`h-4 w-4 transition-transform ${filtersExpanded ? 'rotate-180' : ''}`} />
@@ -423,6 +435,14 @@ function ContactsPage() {
                     onChange={(v) => { setFilterStatus(v as ContactStatus | ''); setCurrentPage(1); }}
                   />
 
+                  {/* Join Date Filter */}
+                  <FilterDropdown
+                    label="Join Date"
+                    value={joinDateFilter}
+                    options={JOIN_DATE_OPTIONS}
+                    onChange={(v) => { setJoinDateFilter(v); setCurrentPage(1); }}
+                  />
+
                   {/* Clear All Button */}
                   {hasActiveFilters && (
                     <button
@@ -480,7 +500,7 @@ function ContactsPage() {
                     <table className="w-full divide-y divide-border table-fixed">
                     <thead className="bg-muted/80 border-b border-border">
                       <tr>
-                        <th className="w-[80%] px-4 py-2.5 text-left">
+                        <th className="w-[25%] px-4 py-2.5 text-left">
                           <button
                             onClick={() => handleSort('displayName')}
                             className="inline-flex items-center gap-1 text-xs font-semibold text-foreground/70 uppercase tracking-wider hover:text-foreground transition-colors"
@@ -493,7 +513,23 @@ function ContactsPage() {
                             )}
                           </button>
                         </th>
-                        <th className="w-[20%] px-4 py-2.5 text-right">
+                        {!selectedContact && (
+                          <th className="w-[15%] px-4 py-2.5 text-left">
+                            <span className="text-xs font-semibold text-foreground/70 uppercase tracking-wider">First Name</span>
+                          </th>
+                        )}
+                        {!selectedContact && (
+                          <th className="w-[15%] px-4 py-2.5 text-left">
+                            <span className="text-xs font-semibold text-foreground/70 uppercase tracking-wider">Last Name</span>
+                          </th>
+                        )}
+                        <th className="w-[15%] px-4 py-2.5 text-left">
+                          <span className="text-xs font-semibold text-foreground/70 uppercase tracking-wider">Join Date</span>
+                        </th>
+                        <th className="w-[15%] px-4 py-2.5 text-right">
+                          <span className="text-xs font-semibold text-foreground/70 uppercase tracking-wider">Balance</span>
+                        </th>
+                        <th className="w-[15%] px-4 py-2.5 text-right">
                           <span className="sr-only">Actions</span>
                         </th>
                       </tr>
@@ -508,6 +544,7 @@ function ContactsPage() {
                               setSelectedContact(null);
                               setSelectedContactDetails(null);
                             } else {
+                              setSidePanelTab('details');
                               setSelectedContact(contact);
                               setSelectedContactDetails(null);
                             }
@@ -523,9 +560,26 @@ function ContactsPage() {
                           <td className="px-4 py-2 whitespace-nowrap">
                             <span className="text-sm font-medium text-foreground">{contact.displayName}</span>
                           </td>
+                          {!selectedContact && (
+                            <td className="px-4 py-2 whitespace-nowrap">
+                              <span className="text-sm text-muted-foreground">{'\u2014'}</span>
+                            </td>
+                          )}
+                          {!selectedContact && (
+                            <td className="px-4 py-2 whitespace-nowrap">
+                              <span className="text-sm text-muted-foreground">{'\u2014'}</span>
+                            </td>
+                          )}
+                          <td className="px-4 py-2 whitespace-nowrap">
+                            <span className="text-sm text-muted-foreground">{'\u2014'}</span>
+                          </td>
                           <td className="px-4 py-2 whitespace-nowrap text-right">
+                            <span className="text-sm text-muted-foreground">{'\u2014'}</span>
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
                             <ActionsDropdown
                               onView={() => {
+                                setSidePanelTab('details');
                                 setSelectedContact(contact);
                                 setSelectedContactDetails(null);
                               }}
@@ -550,6 +604,16 @@ function ContactsPage() {
                               }}
                               onDelete={() => {
                                 setDeletingContact(contact);
+                              }}
+                              onGamingAccounts={() => {
+                                setSidePanelTab('gaming-accounts');
+                                setSelectedContact(contact);
+                                setSelectedContactDetails(null);
+                              }}
+                              onDeals={() => {
+                                setSidePanelTab('deals');
+                                setSelectedContact(contact);
+                                setSelectedContactDetails(null);
                               }}
                             />
                           </td>
@@ -635,6 +699,8 @@ function ContactsPage() {
                 contact={selectedContact}
                 contactDetails={selectedContactDetails}
                 isLoading={isDetailsLoading}
+                activeTab={sidePanelTab}
+                onTabChange={setSidePanelTab}
                 onClose={() => {
                   setSelectedContact(null);
                   setSelectedContactDetails(null);
@@ -733,9 +799,11 @@ interface ActionsDropdownProps {
   onCopy: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onGamingAccounts: () => void;
+  onDeals: () => void;
 }
 
-function ActionsDropdown({ onView, onCopy, onEdit, onDelete }: ActionsDropdownProps) {
+function ActionsDropdown({ onView, onCopy, onEdit, onDelete, onGamingAccounts, onDeals }: ActionsDropdownProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -762,10 +830,10 @@ function ActionsDropdown({ onView, onCopy, onEdit, onDelete }: ActionsDropdownPr
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>Gaming Accounts</DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
-              <DropdownMenuItem onSelect={() => toast.info('View All - coming soon')}>
+              <DropdownMenuItem onSelect={onGamingAccounts}>
                 View All
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => toast.info('Add New - coming soon')}>
+              <DropdownMenuItem onSelect={onGamingAccounts}>
                 Add New
               </DropdownMenuItem>
             </DropdownMenuSubContent>
@@ -773,10 +841,10 @@ function ActionsDropdown({ onView, onCopy, onEdit, onDelete }: ActionsDropdownPr
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>Deals</DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
-              <DropdownMenuItem onSelect={() => toast.info('Manage Deals - coming soon')}>
+              <DropdownMenuItem onSelect={onDeals}>
                 Manage Deals
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => toast.info('Add Deal - coming soon')}>
+              <DropdownMenuItem onSelect={onDeals}>
                 Add Deal
               </DropdownMenuItem>
             </DropdownMenuSubContent>
@@ -799,7 +867,7 @@ function ActionsDropdown({ onView, onCopy, onEdit, onDelete }: ActionsDropdownPr
 }
 
 // ===== Side Panel Tab Types =====
-type SidePanelTab = 'details' | 'status' | 'notes';
+type SidePanelTab = 'details' | 'gaming-accounts' | 'deals' | 'status' | 'notes';
 
 // ===== Side Panel Content Component =====
 
@@ -807,6 +875,8 @@ interface SidePanelContentProps {
   contact: Contact;
   contactDetails: ContactWithDetails | null;
   isLoading: boolean;
+  activeTab: SidePanelTab;
+  onTabChange: (tab: SidePanelTab) => void;
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -816,11 +886,12 @@ function SidePanelContent({
   contact,
   contactDetails,
   isLoading,
+  activeTab,
+  onTabChange,
   onClose,
   onEdit,
   onDelete,
 }: SidePanelContentProps) {
-  const [activeTab, setActiveTab] = useState<SidePanelTab>('details');
   const [notesValue, setNotesValue] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [isAddRoleModalOpen, setIsAddRoleModalOpen] = useState(false);
@@ -1024,10 +1095,6 @@ function SidePanelContent({
     }
   }, [contactDetails]);
 
-  // Reset to details tab when contact changes
-  useEffect(() => {
-    setActiveTab('details');
-  }, [contact.id]);
 
   // Notes save handler (auto-save on blur)
   const handleNotesSave = async () => {
@@ -1073,6 +1140,8 @@ function SidePanelContent({
 
   const tabs: { id: SidePanelTab; label: string }[] = [
     { id: 'details', label: 'Details' },
+    { id: 'gaming-accounts', label: 'Gaming Accounts' },
+    { id: 'deals', label: 'Deals' },
     { id: 'status', label: 'Status' },
     { id: 'notes', label: 'Notes' },
   ];
@@ -1104,8 +1173,8 @@ function SidePanelContent({
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
+            onClick={() => onTabChange(tab.id)}
+            className={`flex-1 px-2 py-2.5 text-xs font-medium whitespace-nowrap transition-colors ${
               activeTab === tab.id
                 ? 'text-foreground border-b-2 border-teal-400'
                 : 'text-muted-foreground hover:text-foreground'
@@ -1289,6 +1358,22 @@ function SidePanelContent({
                   variant="danger"
                   isLoading={isRemovingRole}
                 />
+              </div>
+            )}
+
+            {/* Gaming Accounts Tab */}
+            {activeTab === 'gaming-accounts' && (
+              <div className="p-4 text-center text-muted-foreground">
+                <p className="text-sm">Gaming accounts will be displayed here.</p>
+                <p className="text-xs mt-1">API integration pending</p>
+              </div>
+            )}
+
+            {/* Deals Tab */}
+            {activeTab === 'deals' && (
+              <div className="p-4 text-center text-muted-foreground">
+                <p className="text-sm">Deal links will be displayed here.</p>
+                <p className="text-xs mt-1">API integration pending</p>
               </div>
             )}
 
