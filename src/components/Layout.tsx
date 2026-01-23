@@ -16,7 +16,7 @@ interface LayoutProps {
  */
 export function Layout({ children }: LayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       <AppHeader />
       {/* Main Content - ml-64 reserves space for sidebar */}
       <main className="flex-1 lg:ml-64">{children}</main>
