@@ -546,9 +546,7 @@ function ContactsPage() {
                           className={`transition-colors hover:bg-muted/50 cursor-pointer ${
                             selectedContact?.id === contact.id
                               ? 'bg-accent'
-                              : index % 2 === 0
-                                ? 'bg-background'
-                                : 'bg-muted/30'
+                              : 'bg-muted/30'
                           }`}
                         >
                           <td className="px-4 py-2 whitespace-nowrap">
@@ -576,6 +574,9 @@ function ContactsPage() {
                                 setSidePanelTab('details');
                                 setSelectedContact(contact);
                                 setSelectedContactDetails(null);
+                              }}
+                              onDelete={() => {
+                                setDeletingContact(contact);
                               }}
                               onCopy={async () => {
                                 try {
@@ -802,13 +803,14 @@ interface ActionsDropdownProps {
   onView: () => void;
   onCopy: () => void;
   onEdit: () => void;
+  onDelete: () => void;
   onToggleActive: () => void;
   isActive: boolean;
   onGamingAccounts: () => void;
   onDeals: () => void;
 }
 
-function ActionsDropdown({ onView, onCopy, onEdit, onToggleActive, isActive, onGamingAccounts, onDeals }: ActionsDropdownProps) {
+function ActionsDropdown({ onView, onCopy, onEdit, onDelete, onToggleActive, isActive, onGamingAccounts, onDeals }: ActionsDropdownProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -863,8 +865,12 @@ function ActionsDropdown({ onView, onCopy, onEdit, onToggleActive, isActive, onG
           Commission Report
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={onToggleActive} className={isActive ? 'text-destructive' : 'text-green-600'}>
+        <DropdownMenuItem onSelect={onToggleActive} className={isActive ? 'text-orange-600' : 'text-green-600'}>
           {isActive ? 'Deactivate' : 'Activate'}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onDelete} className="text-destructive">
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -1293,12 +1299,18 @@ function SidePanelContent({
                   <div className="border-t border-border pt-4">
                     <h4 className="text-sm font-medium text-foreground mb-3">Person Details</h4>
                     <div className="space-y-3">
-                      <DetailRow label="First Name" value={contactDetails.personDetails.firstName} />
-                      <DetailRow label="Last Name" value={contactDetails.personDetails.lastName || '—'} />
-                      <DetailRow label="Email" value={contactDetails.personDetails.email || '—'} />
-                      <DetailRow label="Mobile" value={contactDetails.personDetails.mobileNumber || '—'} />
-                      <DetailRow label="Country" value={contactDetails.personDetails.country || '—'} />
-                      <DetailRow label="Area" value={contactDetails.personDetails.area || '—'} />
+                      <div className="grid grid-cols-2 gap-3">
+                        <DetailRow label="First Name" value={contactDetails.personDetails.firstName} />
+                        <DetailRow label="Last Name" value={contactDetails.personDetails.lastName || '—'} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <DetailRow label="Email" value={contactDetails.personDetails.email || '—'} />
+                        <DetailRow label="Mobile" value={contactDetails.personDetails.mobileNumber || '—'} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <DetailRow label="Country" value={contactDetails.personDetails.country || '—'} />
+                        <DetailRow label="Area" value={contactDetails.personDetails.area || '—'} />
+                      </div>
                     </div>
                   </div>
                 )}

@@ -148,7 +148,7 @@ export const contactsApi = {
   },
 
   /**
-   * Delete a contact (soft delete)
+   * Permanently delete a contact and all associated data.
    */
   async delete(id: string): Promise<void> {
     return apiFetch<void>(`/contacts/${id}`, {
