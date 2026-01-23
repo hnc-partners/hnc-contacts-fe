@@ -177,12 +177,16 @@ export const rolesApi = {
   },
 
   async getAllRolesForContact(contactId: string): Promise<ContactRoles> {
-    const [players, partners, hncMembers] = await Promise.all([
+    const results = await Promise.allSettled([
       this.getPlayersByContact(contactId),
       this.getPartnersByContact(contactId),
       this.getHncMembersByContact(contactId),
     ]);
-    return { players, partners, hncMembers };
+    return {
+      players: results[0].status === 'fulfilled' ? results[0].value : [],
+      partners: results[1].status === 'fulfilled' ? results[1].value : [],
+      hncMembers: results[2].status === 'fulfilled' ? results[2].value : [],
+    };
   },
 
   async createPlayer(data: CreatePlayerDto): Promise<Player> {

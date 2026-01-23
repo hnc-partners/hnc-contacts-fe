@@ -81,6 +81,7 @@ export interface CreateContactDto {
   contactType: ContactType;
   displayName: string;
   isActive?: boolean;
+  joinDate?: string | null;
   // Person-specific
   firstName?: string;
   lastName?: string | null;
@@ -98,6 +99,7 @@ export interface CreateContactDto {
 export interface UpdateContactDto {
   displayName?: string;
   isActive?: boolean;
+  joinDate?: string | null;
   // Person-specific
   firstName?: string;
   lastName?: string | null;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { z } from 'zod';
 import { AlertCircle, Gamepad2, Handshake, Users } from 'lucide-react';
+import { CustomSelect } from '@/components/ui/custom-select';
 import type {
   RoleType,
   Player,
@@ -331,35 +332,31 @@ export function RoleForm({
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Status</label>
-                <select
+                <CustomSelect
                   value={playerData.playerStatus || 'active'}
-                  onChange={(e) => setPlayerData({ ...playerData, playerStatus: e.target.value as 'active' | 'inactive' })}
-                  className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  {STATUS_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
+                  onChange={(v) => setPlayerData({ ...playerData, playerStatus: v as 'active' | 'inactive' })}
+                  options={STATUS_OPTIONS}
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Currency</label>
-                <select
+                <CustomSelect
                   value={playerData.preferredCurrency || ''}
-                  onChange={(e) => setPlayerData({ ...playerData, preferredCurrency: e.target.value })}
-                  className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  {CURRENCY_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
+                  onChange={(v) => setPlayerData({ ...playerData, preferredCurrency: v })}
+                  options={CURRENCY_OPTIONS}
+                  placeholder="Select currency"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Payment Method</label>
-                <select
+                <CustomSelect
                   value={playerData.paymentMethod || ''}
-                  onChange={(e) => setPlayerData({ ...playerData, paymentMethod: e.target.value })}
-                  className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  {PAYMENT_METHOD_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
+                  onChange={(v) => setPlayerData({ ...playerData, paymentMethod: v })}
+                  options={PAYMENT_METHOD_OPTIONS}
+                  placeholder="Select payment method"
+                />
               </div>
             </div>
           )}
@@ -390,13 +387,11 @@ export function RoleForm({
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Status</label>
-                <select
+                <CustomSelect
                   value={partnerData.partnerStatus || 'active'}
-                  onChange={(e) => setPartnerData({ ...partnerData, partnerStatus: e.target.value as 'active' | 'inactive' })}
-                  className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  {STATUS_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
+                  onChange={(v) => setPartnerData({ ...partnerData, partnerStatus: v as 'active' | 'inactive' })}
+                  options={STATUS_OPTIONS}
+                />
               </div>
 
               <div className="flex items-center gap-2">
@@ -479,15 +474,13 @@ export function RoleForm({
                   Member Type
                   <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-teal-400" title="Required" />
                 </label>
-                <select
+                <CustomSelect
                   value={hncMemberData.memberType || ''}
-                  onChange={(e) => setHncMemberData({ ...hncMemberData, memberType: e.target.value as 'founder' | 'employee' })}
-                  className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring ${
-                    errors.memberType ? 'border-red-500' : 'border-input'
-                  }`}
-                >
-                  {MEMBER_TYPE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
+                  onChange={(v) => setHncMemberData({ ...hncMemberData, memberType: v as 'founder' | 'employee' })}
+                  options={MEMBER_TYPE_OPTIONS}
+                  placeholder="Select member type"
+                  error={!!errors.memberType}
+                />
                 {errors.memberType && (
                   <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
                     <AlertCircle className="h-3.5 w-3.5" />

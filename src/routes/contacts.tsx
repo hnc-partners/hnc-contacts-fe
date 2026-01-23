@@ -8,6 +8,7 @@ import { ContactForm } from '@/components/ContactForm';
 import { RoleBadge } from '@/components/RoleBadge';
 import { RoleForm } from '@/components/RoleForm';
 import { FilterDropdown } from '@/components/FilterDropdown';
+import { CustomSelect } from '@/components/ui/custom-select';
 import { contactsApi, rolesApi } from '@/services/contacts-api';
 import type { Contact, ContactWithDetails, ContactType, ContactStatus, CreateContactDto, UpdateContactDto, RoleType, Player, Partner, HncMember, CreatePlayerDto, CreatePartnerDto, CreateHncMemberDto, UpdatePlayerDto, UpdatePartnerDto, UpdateHncMemberDto } from '@/types/contacts';
 import { STATUS_COLORS } from '@/types/contacts';
@@ -381,22 +382,15 @@ function ContactsPage() {
                   </button>
 
                   {/* Rows per page */}
-                  <div className="relative">
-                    <select
-                      value={rowsPerPage}
-                      onChange={(e) => {
-                        setRowsPerPage(Number(e.target.value));
+                  <div className="w-[80px]">
+                    <CustomSelect
+                      value={String(rowsPerPage)}
+                      onChange={(v) => {
+                        setRowsPerPage(Number(v));
                         setCurrentPage(1);
                       }}
-                      className="h-9 rounded-md border border-input bg-background pl-3 pr-8 text-sm appearance-none cursor-pointer"
-                    >
-                      {ROWS_PER_PAGE_OPTIONS.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      options={ROWS_PER_PAGE_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
+                    />
                   </div>
                 </div>
 
@@ -602,8 +596,17 @@ function ContactsPage() {
                               onEdit={() => {
                                 handleOpenEditModal(contact);
                               }}
-                              onDelete={() => {
-                                setDeletingContact(contact);
+                              isActive={contact.isActive}
+                              onToggleActive={async () => {
+                                try {
+                                  const newStatus = !contact.isActive;
+                                  await contactsApi.update(contact.id, { isActive: newStatus });
+                                  queryClient.invalidateQueries({ queryKey: ['contacts'] });
+                                  queryClient.invalidateQueries({ queryKey: ['contact', contact.id] });
+                                  toast.success(`Contact ${newStatus ? 'activated' : 'deactivated'} successfully`);
+                                } catch (error) {
+                                  toast.error(`Failed to update contact status: ${(error as Error).message}`);
+                                }
                               }}
                               onGamingAccounts={() => {
                                 setSidePanelTab('gaming-accounts');
@@ -762,6 +765,7 @@ function ContactsPage() {
         itemDetails={[
           { label: 'Name', value: deletingContact?.displayName || '' },
           { label: 'Type', value: deletingContact?.contactType === 'person' ? 'Person' : 'Organization' },
+          { label: 'Join Date', value: '—' },
         ]}
         confirmText="Delete"
         variant="danger"
@@ -798,12 +802,13 @@ interface ActionsDropdownProps {
   onView: () => void;
   onCopy: () => void;
   onEdit: () => void;
-  onDelete: () => void;
+  onToggleActive: () => void;
+  isActive: boolean;
   onGamingAccounts: () => void;
   onDeals: () => void;
 }
 
-function ActionsDropdown({ onView, onCopy, onEdit, onDelete, onGamingAccounts, onDeals }: ActionsDropdownProps) {
+function ActionsDropdown({ onView, onCopy, onEdit, onToggleActive, isActive, onGamingAccounts, onDeals }: ActionsDropdownProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -858,8 +863,8 @@ function ActionsDropdown({ onView, onCopy, onEdit, onDelete, onGamingAccounts, o
           Commission Report
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={onDelete} className="text-destructive focus:text-destructive">
-          Deactivate
+        <DropdownMenuItem onSelect={onToggleActive} className={isActive ? 'text-destructive' : 'text-green-600'}>
+          {isActive ? 'Deactivate' : 'Activate'}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -1395,22 +1400,17 @@ function SidePanelContent({
                   <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Change Status
                   </label>
-                  <div className="relative">
-                    <select
-                      value={pendingStatus || ''}
-                      onChange={(e) => setPendingStatus(e.target.value as 'active' | 'inactive' | '')}
-                      disabled={isStatusChanging}
-                      className="w-full h-10 rounded-md border border-input bg-background pl-3 pr-8 text-sm appearance-none cursor-pointer disabled:opacity-50"
-                    >
-                      <option value="">Select new status...</option>
-                      {(contactDetails?.isActive ?? contact.isActive) ? (
-                        <option value="inactive">Inactive</option>
-                      ) : (
-                        <option value="active">Active</option>
-                      )}
-                    </select>
-                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  </div>
+                  <CustomSelect
+                    value={pendingStatus || ''}
+                    onChange={(v) => setPendingStatus(v as 'active' | 'inactive' | '')}
+                    disabled={isStatusChanging}
+                    placeholder="Select new status..."
+                    options={
+                      (contactDetails?.isActive ?? contact.isActive)
+                        ? [{ value: '', label: 'Select new status...' }, { value: 'inactive', label: 'Inactive' }]
+                        : [{ value: '', label: 'Select new status...' }, { value: 'active', label: 'Active' }]
+                    }
+                  />
                 </div>
 
                 {/* Inline confirmation */}
@@ -1475,23 +1475,25 @@ function SidePanelContent({
         )}
       </div>
 
-      {/* Footer with Edit and Delete buttons */}
-      <div className="border-t border-border p-4 flex gap-2">
-        <button
-          onClick={onEdit}
-          className="flex-1 inline-flex items-center justify-center gap-2 h-9 rounded-md bg-teal-400/80 text-white text-sm font-medium hover:bg-teal-400 transition-colors"
-        >
-          <Pencil className="h-4 w-4" />
-          Edit
-        </button>
-        <button
-          onClick={onDelete}
-          className="flex-1 inline-flex items-center justify-center gap-2 h-9 rounded-md border border-input text-muted-foreground text-sm font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/20 dark:hover:text-red-400 dark:hover:border-red-800 transition-colors"
-        >
-          <Trash2 className="h-4 w-4" />
-          Delete
-        </button>
-      </div>
+      {/* Footer with Edit and Delete buttons - only on Details tab */}
+      {activeTab === 'details' && (
+        <div className="border-t border-border p-4 flex gap-2">
+          <button
+            onClick={onEdit}
+            className="flex-1 inline-flex items-center justify-center gap-2 h-9 rounded-md bg-teal-400/80 text-white text-sm font-medium hover:bg-teal-400 transition-colors"
+          >
+            <Pencil className="h-4 w-4" />
+            Edit
+          </button>
+          <button
+            onClick={onDelete}
+            className="flex-1 inline-flex items-center justify-center gap-2 h-9 rounded-md border border-input text-muted-foreground text-sm font-medium hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/20 dark:hover:text-red-400 dark:hover:border-red-800 transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </button>
+        </div>
+      )}
     </div>
   );
 }

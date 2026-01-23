@@ -11,6 +11,7 @@ const personSchema = z.object({
   email: z.string().email('Invalid email address').optional().or(z.literal('')).nullable(),
   mobileNumber: z.string().optional().nullable(),
   country: z.string().optional().nullable(),
+  joinDate: z.string().optional().nullable(),
 });
 
 const organizationSchema = z.object({
@@ -18,6 +19,7 @@ const organizationSchema = z.object({
   taxId: z.string().optional().nullable(),
   registrationNumber: z.string().optional().nullable(),
   country: z.string().optional().nullable(),
+  joinDate: z.string().optional().nullable(),
 });
 
 type PersonFormData = z.infer<typeof personSchema>;
@@ -63,6 +65,7 @@ export function ContactForm({
         email: contact.personDetails.email || '',
         mobileNumber: contact.personDetails.mobileNumber || '',
         country: contact.personDetails.country || '',
+        joinDate: '',
       };
     }
     return {
@@ -71,6 +74,7 @@ export function ContactForm({
       email: '',
       mobileNumber: '',
       country: '',
+      joinDate: '',
     };
   });
 
@@ -82,6 +86,7 @@ export function ContactForm({
         taxId: contact.organizationDetails.taxId || '',
         registrationNumber: contact.organizationDetails.registrationNumber || '',
         country: contact.organizationDetails.country || '',
+        joinDate: '',
       };
     }
     return {
@@ -89,6 +94,7 @@ export function ContactForm({
       taxId: '',
       registrationNumber: '',
       country: '',
+      joinDate: '',
     };
   });
 
@@ -103,6 +109,7 @@ export function ContactForm({
           email: contact.personDetails.email || '',
           mobileNumber: contact.personDetails.mobileNumber || '',
           country: contact.personDetails.country || '',
+          joinDate: '',
         });
       }
       if (contact.organizationDetails) {
@@ -111,6 +118,7 @@ export function ContactForm({
           taxId: contact.organizationDetails.taxId || '',
           registrationNumber: contact.organizationDetails.registrationNumber || '',
           country: contact.organizationDetails.country || '',
+          joinDate: '',
         });
       }
     }
@@ -147,6 +155,7 @@ export function ContactForm({
           email: personData.email || null,
           mobileNumber: personData.mobileNumber || null,
           country: personData.country || null,
+          joinDate: personData.joinDate || null,
         });
       } else {
         // For create mode, send CreateContactDto (with contactType)
@@ -158,6 +167,7 @@ export function ContactForm({
           email: personData.email || null,
           mobileNumber: personData.mobileNumber || null,
           country: personData.country || null,
+          joinDate: personData.joinDate || null,
         });
       }
     } else {
@@ -181,6 +191,7 @@ export function ContactForm({
           taxId: orgData.taxId || null,
           registrationNumber: orgData.registrationNumber || null,
           country: orgData.country || null,
+          joinDate: orgData.joinDate || null,
         });
       } else {
         // For create mode, send CreateContactDto (with contactType)
@@ -191,6 +202,7 @@ export function ContactForm({
           taxId: orgData.taxId || null,
           registrationNumber: orgData.registrationNumber || null,
           country: orgData.country || null,
+          joinDate: orgData.joinDate || null,
         });
       }
     }
@@ -240,7 +252,7 @@ export function ContactForm({
 
       {/* Dynamic Form Fields */}
       {contactType === 'person' ? (
-        <div className="space-y-4">
+        <div className="space-y-4 min-h-[500px]">
           {/* First Name - Required */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
@@ -327,9 +339,22 @@ export function ContactForm({
               placeholder="Enter country"
             />
           </div>
+
+          {/* Join Date */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Join Date
+            </label>
+            <input
+              type="date"
+              value={personData.joinDate || ''}
+              onChange={(e) => setPersonData({ ...personData, joinDate: e.target.value })}
+              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 min-h-[500px]">
           {/* Legal Name - Required */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
@@ -392,6 +417,19 @@ export function ContactForm({
               onChange={(e) => setOrgData({ ...orgData, country: e.target.value })}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Enter country"
+            />
+          </div>
+
+          {/* Join Date */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Join Date
+            </label>
+            <input
+              type="date"
+              value={orgData.joinDate || ''}
+              onChange={(e) => setOrgData({ ...orgData, joinDate: e.target.value })}
+              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
         </div>

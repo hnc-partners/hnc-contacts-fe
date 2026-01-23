@@ -86,16 +86,16 @@ export function FilterDropdown({ label, value, options, onChange }: FilterDropdo
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 min-w-[160px] rounded-lg border border-border bg-popover shadow-md py-1">
+        <div className="absolute top-full left-0 mt-2 z-50 min-w-[160px] rounded-xl bg-popover shadow-lg ring-1 ring-black/5 dark:ring-white/10 p-1.5">
           {options.filter((o) => o.value !== '').map((option) => (
             <button
               key={option.value}
               type="button"
               onClick={() => { onChange(option.value); setOpen(false); }}
-              className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                 value === option.value
                   ? 'text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/20 font-medium'
-                  : 'text-foreground hover:bg-muted'
+                  : 'text-foreground hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-700 dark:hover:text-teal-300'
               }`}
             >
               {option.label}
