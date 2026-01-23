@@ -12,6 +12,16 @@ import type {
   ContactDetailResponse,
   CreateContactDto,
   UpdateContactDto,
+  Player,
+  Partner,
+  HncMember,
+  ContactRoles,
+  CreatePlayerDto,
+  CreatePartnerDto,
+  CreateHncMemberDto,
+  UpdatePlayerDto,
+  UpdatePartnerDto,
+  UpdateHncMemberDto,
 } from '../types/contacts';
 
 // In development, use /api proxy to avoid CORS issues
@@ -132,7 +142,7 @@ export const contactsApi = {
    */
   async update(id: string, data: UpdateContactDto): Promise<Contact> {
     return apiFetch<Contact>(`/contacts/${id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
   },
@@ -144,5 +154,88 @@ export const contactsApi = {
     return apiFetch<void>(`/contacts/${id}`, {
       method: 'DELETE',
     });
+  },
+};
+
+// ===== ROLES API =====
+
+export const rolesApi = {
+  async getPlayersByContact(contactId: string): Promise<Player[]> {
+    const response = await apiFetch<{ data: Player[] }>(`/players?contactId=${contactId}`);
+    // API may not filter properly - filter client-side to be safe
+    return (response.data || []).filter(r => r.contactId === contactId);
+  },
+
+  async getPartnersByContact(contactId: string): Promise<Partner[]> {
+    const response = await apiFetch<{ data: Partner[] }>(`/partners?contactId=${contactId}`);
+    return (response.data || []).filter(r => r.contactId === contactId);
+  },
+
+  async getHncMembersByContact(contactId: string): Promise<HncMember[]> {
+    const response = await apiFetch<{ data: HncMember[] }>(`/hnc-members?contactId=${contactId}`);
+    return (response.data || []).filter(r => r.contactId === contactId);
+  },
+
+  async getAllRolesForContact(contactId: string): Promise<ContactRoles> {
+    const [players, partners, hncMembers] = await Promise.all([
+      this.getPlayersByContact(contactId),
+      this.getPartnersByContact(contactId),
+      this.getHncMembersByContact(contactId),
+    ]);
+    return { players, partners, hncMembers };
+  },
+
+  async createPlayer(data: CreatePlayerDto): Promise<Player> {
+    return apiFetch<Player>('/players', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async createPartner(data: CreatePartnerDto): Promise<Partner> {
+    return apiFetch<Partner>('/partners', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async createHncMember(data: CreateHncMemberDto): Promise<HncMember> {
+    return apiFetch<HncMember>('/hnc-members', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updatePlayer(id: string, data: UpdatePlayerDto): Promise<Player> {
+    return apiFetch<Player>(`/players/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updatePartner(id: string, data: UpdatePartnerDto): Promise<Partner> {
+    return apiFetch<Partner>(`/partners/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateHncMember(id: string, data: UpdateHncMemberDto): Promise<HncMember> {
+    return apiFetch<HncMember>(`/hnc-members/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deletePlayer(id: string): Promise<void> {
+    return apiFetch<void>(`/players/${id}`, { method: 'DELETE' });
+  },
+
+  async deletePartner(id: string): Promise<void> {
+    return apiFetch<void>(`/partners/${id}`, { method: 'DELETE' });
+  },
+
+  async deleteHncMember(id: string): Promise<void> {
+    return apiFetch<void>(`/hnc-members/${id}`, { method: 'DELETE' });
   },
 };

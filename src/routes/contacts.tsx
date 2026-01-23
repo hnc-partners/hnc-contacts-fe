@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Layout } from '@/components/Layout';
-import { contactsApi } from '@/services/contacts-api';
-import type { Contact, ContactWithDetails, ContactType, ContactStatus } from '@/types/contacts';
+import { Modal, ConfirmModal } from '@/components/Modal';
+import { ContactForm } from '@/components/ContactForm';
+import { RoleBadge } from '@/components/RoleBadge';
+import { RoleForm } from '@/components/RoleForm';
+import { contactsApi, rolesApi } from '@/services/contacts-api';
+import type { Contact, ContactWithDetails, ContactType, ContactStatus, CreateContactDto, UpdateContactDto, RoleType, Player, Partner, HncMember, CreatePlayerDto, CreatePartnerDto, CreateHncMemberDto, UpdatePlayerDto, UpdatePartnerDto, UpdateHncMemberDto } from '@/types/contacts';
 import { STATUS_COLORS } from '@/types/contacts';
 import {
   Loader2,
@@ -28,9 +33,7 @@ import {
   Building2,
   GripVertical,
   Home,
-  UserPlus,
-  FileText,
-  UserCog,
+  Plus,
 } from 'lucide-react';
 
 // Status options for filtering
@@ -61,9 +64,14 @@ export const Route = createFileRoute('/contacts')({
  * Design per FES-01.
  */
 function ContactsPage() {
+  const queryClient = useQueryClient();
+
   // UI State
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [selectedContactDetails, setSelectedContactDetails] = useState<ContactWithDetails | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<ContactWithDetails | null>(null);
+  const [deletingContact, setDeletingContact] = useState<Contact | null>(null);
 
   // Filter/Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,10 +81,10 @@ function ContactsPage() {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Sorting State
-  type SortField = 'displayName' | 'contactType' | 'isActive' | null;
+  type SortField = 'displayName' | null;
   type SortDirection = 'asc' | 'desc';
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -93,15 +101,12 @@ function ContactsPage() {
 
   // Fetch contacts
   const { data: contactsResponse, isLoading, error } = useQuery({
-    queryKey: ['contacts', filterStatus, filterType, searchQuery, currentPage, rowsPerPage, sortField, sortDirection],
+    queryKey: ['contacts', filterStatus, filterType, searchQuery],
     queryFn: () => contactsApi.getAll({
       isActive: filterStatus === 'active' ? true : filterStatus === 'inactive' ? false : undefined,
       contactType: filterType || undefined,
       search: searchQuery || undefined,
-      page: currentPage,
-      limit: rowsPerPage,
-      sortBy: sortField || undefined,
-      sortOrder: sortField ? sortDirection : undefined,
+      limit: 500,
     }),
   });
 
@@ -118,9 +123,109 @@ function ContactsPage() {
     }
   }, [contactDetails]);
 
-  const allContacts = contactsResponse?.data || [];
-  const totalItems = contactsResponse?.pagination?.total || 0;
-  const totalPages = contactsResponse?.pagination?.totalPages || Math.ceil(totalItems / rowsPerPage);
+  // Create contact mutation
+  const createContactMutation = useMutation({
+    mutationFn: (data: CreateContactDto) => contactsApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      setIsCreateModalOpen(false);
+      toast.success('Contact created successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to create contact: ${error.message}`);
+    },
+  });
+
+  const handleCreateContact = (data: CreateContactDto | UpdateContactDto) => {
+    // In create mode, data will always have contactType
+    createContactMutation.mutate(data as CreateContactDto);
+  };
+
+  // Update contact mutation
+  const updateContactMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateContactDto }) => contactsApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      // Also invalidate the specific contact query to refresh side panel
+      if (editingContact) {
+        queryClient.invalidateQueries({ queryKey: ['contact', editingContact.id] });
+      }
+      setEditingContact(null);
+      toast.success('Contact updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update contact: ${error.message}`);
+    },
+  });
+
+  const handleUpdateContact = (data: CreateContactDto | UpdateContactDto) => {
+    if (editingContact) {
+      updateContactMutation.mutate({ id: editingContact.id, data: data as UpdateContactDto });
+    }
+  };
+
+  // Delete contact mutation
+  const deleteContactMutation = useMutation({
+    mutationFn: (id: string) => contactsApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      setDeletingContact(null);
+      setSelectedContact(null);
+      setSelectedContactDetails(null);
+      toast.success('Contact deleted successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to delete contact: ${error.message}`);
+    },
+  });
+
+  const handleDeleteConfirm = () => {
+    if (deletingContact) {
+      deleteContactMutation.mutate(deletingContact.id);
+    }
+  };
+
+  // Open edit modal - use existing details if available, otherwise fetch
+  const handleOpenEditModal = async (contact: Contact) => {
+    // If we already have full details from the side panel, use them
+    if (selectedContactDetails && selectedContactDetails.id === contact.id) {
+      setEditingContact(selectedContactDetails);
+    } else {
+      // Otherwise, fetch the contact details first
+      try {
+        const details = await contactsApi.getById(contact.id);
+        setEditingContact(details);
+      } catch (error) {
+        toast.error(`Failed to load contact details: ${(error as Error).message}`);
+      }
+    }
+  };
+
+  // Client-side isActive filter as workaround for API boolean coercion bug
+  // (API treats "false" string as true). Safe to remove once API is redeployed.
+  const rawContacts = contactsResponse?.data || [];
+  const filteredContacts = filterStatus
+    ? rawContacts.filter(c => filterStatus === 'active' ? c.isActive : !c.isActive)
+    : rawContacts;
+
+  // Client-side sorting
+  const allContacts = [...filteredContacts].sort((a, b) => {
+    if (!sortField) return 0;
+    let aValue: string | boolean = a[sortField] ?? '';
+    let bValue: string | boolean = b[sortField] ?? '';
+    if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+    if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  // Client-side pagination
+  const totalItems = allContacts.length;
+  const totalPages = Math.ceil(totalItems / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+  const paginatedContacts = allContacts.slice(startIndex, endIndex);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -143,20 +248,20 @@ function ContactsPage() {
     // Arrow keys - navigate between rows (only when side panel is open)
     if (selectedContact && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       e.preventDefault();
-      const currentIndex = allContacts.findIndex(c => c.id === selectedContact.id);
+      const currentIndex = paginatedContacts.findIndex(c => c.id === selectedContact.id);
       if (currentIndex === -1) return;
 
       let newIndex: number;
       if (e.key === 'ArrowUp') {
-        newIndex = currentIndex > 0 ? currentIndex - 1 : allContacts.length - 1;
+        newIndex = currentIndex > 0 ? currentIndex - 1 : paginatedContacts.length - 1;
       } else {
-        newIndex = currentIndex < allContacts.length - 1 ? currentIndex + 1 : 0;
+        newIndex = currentIndex < paginatedContacts.length - 1 ? currentIndex + 1 : 0;
       }
 
-      setSelectedContact(allContacts[newIndex]);
+      setSelectedContact(paginatedContacts[newIndex]);
       setSelectedContactDetails(null);
     }
-  }, [selectedContact, allContacts]);
+  }, [selectedContact, paginatedContacts]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -186,10 +291,6 @@ function ContactsPage() {
     document.removeEventListener('mouseup', handleMouseUp);
   };
 
-  // Pagination info
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
-
   return (
     <Layout>
       <div className="flex h-[calc(100vh-56px)]">
@@ -199,9 +300,16 @@ function ContactsPage() {
           style={{ marginRight: selectedContact ? sidePanelWidth : 0 }}
         >
           <div className="py-6 px-4 sm:px-6 lg:px-8">
-              {/* Header Row - Title */}
+              {/* Header Row - Title and Add Button */}
               <div className="flex items-center justify-between mb-2">
                 <h1 className="text-2xl font-semibold text-foreground">Contacts</h1>
+                <button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-teal-400 text-white text-sm font-medium hover:bg-teal-500 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Contact
+                </button>
               </div>
 
               {/* Breadcrumb */}
@@ -393,31 +501,15 @@ function ContactsPage() {
                           </button>
                         </th>
                         <th className={`${selectedContact ? 'w-[25%]' : 'w-[20%]'} px-4 py-2.5 text-left`}>
-                          <button
-                            onClick={() => handleSort('contactType')}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-foreground/70 uppercase tracking-wider hover:text-foreground transition-colors"
-                          >
+                          <span className="text-xs font-semibold text-foreground/70 uppercase tracking-wider">
                             Type
-                            {sortField === 'contactType' ? (
-                              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                            ) : (
-                              <ArrowUpDown className="h-3 w-3 opacity-50" />
-                            )}
-                          </button>
+                          </span>
                         </th>
                         {!selectedContact && (
                           <th className="w-[20%] px-4 py-2.5 text-left">
-                            <button
-                              onClick={() => handleSort('isActive')}
-                              className="inline-flex items-center gap-1 text-xs font-semibold text-foreground/70 uppercase tracking-wider hover:text-foreground transition-colors"
-                            >
+                            <span className="text-xs font-semibold text-foreground/70 uppercase tracking-wider">
                               Status
-                              {sortField === 'isActive' ? (
-                                sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                              ) : (
-                                <ArrowUpDown className="h-3 w-3 opacity-50" />
-                              )}
-                            </button>
+                            </span>
                           </th>
                         )}
                         <th className={`${selectedContact ? 'w-[30%]' : 'w-[20%]'} px-4 py-2.5 text-right`}>
@@ -426,7 +518,7 @@ function ContactsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {allContacts.map((contact, index) => (
+                      {paginatedContacts.map((contact, index) => (
                         <tr
                           key={contact.id}
                           data-index={index}
@@ -465,12 +557,10 @@ function ContactsPage() {
                                 setSelectedContactDetails(null);
                               }}
                               onEdit={() => {
-                                // TODO: Implement edit modal
-                                console.log('Edit contact:', contact.id);
+                                handleOpenEditModal(contact);
                               }}
                               onDelete={() => {
-                                // TODO: Implement delete modal
-                                console.log('Delete contact:', contact.id);
+                                setDeletingContact(contact);
                               }}
                               rowIndex={index}
                               totalRows={allContacts.length}
@@ -589,18 +679,67 @@ function ContactsPage() {
                   setSelectedContactDetails(null);
                 }}
                 onEdit={() => {
-                  // TODO: Implement edit modal
-                  console.log('Edit contact:', selectedContact.id);
+                  // Side panel already has full contact details
+                  if (selectedContactDetails) {
+                    setEditingContact(selectedContactDetails);
+                  }
                 }}
                 onDelete={() => {
-                  // TODO: Implement delete modal
-                  console.log('Delete contact:', selectedContact.id);
+                  setDeletingContact(selectedContact);
                 }}
               />
             )}
           </div>
         </div>
       </div>
+
+      {/* Create Contact Modal */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Create Contact"
+        accentColor="teal"
+      >
+        <ContactForm
+          onSubmit={handleCreateContact}
+          onCancel={() => setIsCreateModalOpen(false)}
+          isSubmitting={createContactMutation.isPending}
+        />
+      </Modal>
+
+      {/* Edit Contact Modal */}
+      <Modal
+        isOpen={editingContact !== null}
+        onClose={() => setEditingContact(null)}
+        title="Edit Contact"
+        accentColor="teal"
+      >
+        {editingContact && (
+          <ContactForm
+            onSubmit={handleUpdateContact}
+            onCancel={() => setEditingContact(null)}
+            isSubmitting={updateContactMutation.isPending}
+            contact={editingContact}
+            isEditMode={true}
+          />
+        )}
+      </Modal>
+
+      {/* Delete Contact Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!deletingContact}
+        onClose={() => setDeletingContact(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Contact"
+        message="Are you sure you want to delete this contact? This action cannot be undone."
+        itemDetails={[
+          { label: 'Name', value: deletingContact?.displayName || '' },
+          { label: 'Type', value: deletingContact?.contactType === 'person' ? 'Person' : 'Organization' },
+        ]}
+        confirmText="Delete"
+        variant="danger"
+        isLoading={deleteContactMutation.isPending}
+      />
     </Layout>
   );
 }
@@ -723,7 +862,7 @@ function ActionsDropdown({ onView, onEdit, onDelete, rowIndex, totalRows }: Acti
 }
 
 // ===== Side Panel Tab Types =====
-type SidePanelTab = 'details' | 'roles' | 'notes';
+type SidePanelTab = 'details' | 'status' | 'notes';
 
 // ===== Side Panel Content Component =====
 
@@ -747,7 +886,198 @@ function SidePanelContent({
   const [activeTab, setActiveTab] = useState<SidePanelTab>('details');
   const [notesValue, setNotesValue] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [isAddRoleModalOpen, setIsAddRoleModalOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<{
+    type: RoleType;
+    role: Player | Partner | HncMember;
+  } | null>(null);
+  const [removingRole, setRemovingRole] = useState<{
+    type: RoleType;
+    role: Player | Partner | HncMember;
+  } | null>(null);
   const queryClient = useQueryClient();
+
+  // Create role mutations
+  const createPlayerMutation = useMutation({
+    mutationFn: (data: CreatePlayerDto) => rolesApi.createPlayer(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-roles', contact.id] });
+      setIsAddRoleModalOpen(false);
+      toast.success('Player role added successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to add player role: ${error.message}`);
+    },
+  });
+
+  const createPartnerMutation = useMutation({
+    mutationFn: (data: CreatePartnerDto) => rolesApi.createPartner(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-roles', contact.id] });
+      setIsAddRoleModalOpen(false);
+      toast.success('Partner role added successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to add partner role: ${error.message}`);
+    },
+  });
+
+  const createHncMemberMutation = useMutation({
+    mutationFn: (data: CreateHncMemberDto) => rolesApi.createHncMember(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-roles', contact.id] });
+      setIsAddRoleModalOpen(false);
+      toast.success('HNC Member role added successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to add HNC member role: ${error.message}`);
+    },
+  });
+
+  const isAddingRole = createPlayerMutation.isPending || createPartnerMutation.isPending || createHncMemberMutation.isPending;
+
+  const handleAddRole = (roleType: RoleType, data: CreatePlayerDto | CreatePartnerDto | CreateHncMemberDto) => {
+    switch (roleType) {
+      case 'player':
+        createPlayerMutation.mutate(data as CreatePlayerDto);
+        break;
+      case 'partner':
+        createPartnerMutation.mutate(data as CreatePartnerDto);
+        break;
+      case 'hnc_member':
+        createHncMemberMutation.mutate(data as CreateHncMemberDto);
+        break;
+    }
+  };
+
+  // Update role mutations
+  const updatePlayerMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdatePlayerDto }) => rolesApi.updatePlayer(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-roles', contact.id] });
+      setEditingRole(null);
+      toast.success('Player role updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update player role: ${error.message}`);
+    },
+  });
+
+  const updatePartnerMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdatePartnerDto }) => rolesApi.updatePartner(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-roles', contact.id] });
+      setEditingRole(null);
+      toast.success('Partner role updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update partner role: ${error.message}`);
+    },
+  });
+
+  const updateHncMemberMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateHncMemberDto }) => rolesApi.updateHncMember(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-roles', contact.id] });
+      setEditingRole(null);
+      toast.success('HNC Member role updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update HNC member role: ${error.message}`);
+    },
+  });
+
+  const isUpdatingRole = updatePlayerMutation.isPending || updatePartnerMutation.isPending || updateHncMemberMutation.isPending;
+
+  const handleUpdateRole = (roleType: RoleType, data: any) => {
+    if (!editingRole) return;
+    const roleId = editingRole.role.id;
+    switch (roleType) {
+      case 'player':
+        updatePlayerMutation.mutate({ id: roleId, data: data as UpdatePlayerDto });
+        break;
+      case 'partner':
+        updatePartnerMutation.mutate({ id: roleId, data: data as UpdatePartnerDto });
+        break;
+      case 'hnc_member':
+        updateHncMemberMutation.mutate({ id: roleId, data: data as UpdateHncMemberDto });
+        break;
+    }
+  };
+
+  // Delete role mutations
+  const deletePlayerMutation = useMutation({
+    mutationFn: (id: string) => rolesApi.deletePlayer(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-roles', contact.id] });
+      setRemovingRole(null);
+      toast.success('Player role removed successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to remove player role: ${error.message}`);
+    },
+  });
+
+  const deletePartnerMutation = useMutation({
+    mutationFn: (id: string) => rolesApi.deletePartner(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-roles', contact.id] });
+      setRemovingRole(null);
+      toast.success('Partner role removed successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to remove partner role: ${error.message}`);
+    },
+  });
+
+  const deleteHncMemberMutation = useMutation({
+    mutationFn: (id: string) => rolesApi.deleteHncMember(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-roles', contact.id] });
+      setRemovingRole(null);
+      toast.success('HNC Member role removed successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to remove HNC member role: ${error.message}`);
+    },
+  });
+
+  const isRemovingRole = deletePlayerMutation.isPending || deletePartnerMutation.isPending || deleteHncMemberMutation.isPending;
+
+  const handleRemoveRole = () => {
+    if (!removingRole) return;
+    const { type, role } = removingRole;
+    switch (type) {
+      case 'player':
+        deletePlayerMutation.mutate(role.id);
+        break;
+      case 'partner':
+        deletePartnerMutation.mutate(role.id);
+        break;
+      case 'hnc_member':
+        deleteHncMemberMutation.mutate(role.id);
+        break;
+    }
+  };
+
+  // Fetch roles when Details tab is active (roles are shown in Details tab)
+  const { data: roles, isLoading: isRolesLoading } = useQuery({
+    queryKey: ['contact-roles', contact.id],
+    queryFn: () => rolesApi.getAllRolesForContact(contact.id),
+    enabled: activeTab === 'details',
+  });
+
+  const hasRoles = roles && (
+    roles.players.length > 0 ||
+    roles.partners.length > 0 ||
+    roles.hncMembers.length > 0
+  );
+
+  const existingRoleTypes: RoleType[] = [
+    ...(roles?.players.length ? ['player' as const] : []),
+    ...(roles?.partners.length ? ['partner' as const] : []),
+    ...(roles?.hncMembers.length ? ['hnc_member' as const] : []),
+  ];
 
   // Sync notes from contactDetails when loaded
   useEffect(() => {
@@ -784,10 +1114,30 @@ function SidePanelContent({
     }
   };
 
-  const tabs: { id: SidePanelTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'details', label: 'Details', icon: <FileText className="h-4 w-4" /> },
-    { id: 'roles', label: 'Roles', icon: <UserCog className="h-4 w-4" /> },
-    { id: 'notes', label: 'Notes', icon: <FileText className="h-4 w-4" /> },
+  // Status change state
+  const [pendingStatus, setPendingStatus] = useState<string>('');
+  const [isStatusChanging, setIsStatusChanging] = useState(false);
+
+  const confirmStatusChange = async () => {
+    if (!pendingStatus) return;
+    setIsStatusChanging(true);
+    try {
+      await contactsApi.update(contact.id, { isActive: pendingStatus === 'active' });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['contact', contact.id] });
+      toast.success(`Contact ${pendingStatus === 'active' ? 'activated' : 'deactivated'} successfully`);
+      setPendingStatus('');
+    } catch (error) {
+      toast.error('Failed to update status');
+    } finally {
+      setIsStatusChanging(false);
+    }
+  };
+
+  const tabs: { id: SidePanelTab; label: string }[] = [
+    { id: 'details', label: 'Details' },
+    { id: 'status', label: 'Status' },
+    { id: 'notes', label: 'Notes' },
   ];
 
   return (
@@ -811,22 +1161,18 @@ function SidePanelContent({
       </div>
 
       {/* Tab Bar */}
-      <div className="flex border-b border-border px-4">
+      <div className="flex border-b border-border">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors relative ${
+            className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
               activeTab === tab.id
-                ? 'text-foreground'
+                ? 'text-foreground border-b-2 border-teal-400'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {tab.label}
-            {/* Active tab underline */}
-            {activeTab === tab.id && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-400" />
-            )}
           </button>
         ))}
       </div>
@@ -842,20 +1188,91 @@ function SidePanelContent({
             {/* Details Tab */}
             {activeTab === 'details' && (
               <div className="p-4 space-y-4">
-                {/* Basic Info */}
-                <div className="space-y-3">
-                  <DetailRow label="Status">
-                    <StatusBadge status={contact.isActive ? 'active' : 'inactive'} />
-                  </DetailRow>
-                  <DetailRow label="Type">
-                    <TypeBadge type={contact.contactType} />
-                  </DetailRow>
-                  {contactDetails?.personDetails && (
-                    <>
-                      <DetailRow label="Email" value={contactDetails.personDetails.email || '—'} />
-                      <DetailRow label="Mobile" value={contactDetails.personDetails.mobileNumber || '—'} />
-                    </>
-                  )}
+                {/* Roles Section at Top */}
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Roles
+                  </label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {isRolesLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : hasRoles ? (
+                      <>
+                        {roles?.players.map((p) => (
+                          <div key={p.id} className="group relative inline-flex items-center">
+                            <RoleBadge type="player" />
+                            <div className="hidden group-hover:flex items-center gap-0.5 ml-1">
+                              <button
+                                onClick={() => setEditingRole({ type: 'player', role: p })}
+                                className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                                title="Edit player role"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={() => setRemovingRole({ type: 'player', role: p })}
+                                className="p-0.5 rounded text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                title="Remove player role"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {roles?.partners.map((p) => (
+                          <div key={p.id} className="group relative inline-flex items-center">
+                            <RoleBadge type="partner" />
+                            <div className="hidden group-hover:flex items-center gap-0.5 ml-1">
+                              <button
+                                onClick={() => setEditingRole({ type: 'partner', role: p })}
+                                className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                                title="Edit partner role"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={() => setRemovingRole({ type: 'partner', role: p })}
+                                className="p-0.5 rounded text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                title="Remove partner role"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {roles?.hncMembers.map((m) => (
+                          <div key={m.id} className="group relative inline-flex items-center">
+                            <RoleBadge type="hnc_member" />
+                            <div className="hidden group-hover:flex items-center gap-0.5 ml-1">
+                              <button
+                                onClick={() => setEditingRole({ type: 'hnc_member', role: m })}
+                                className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                                title="Edit HNC member role"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={() => setRemovingRole({ type: 'hnc_member', role: m })}
+                                className="p-0.5 rounded text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                title="Remove HNC member role"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <span className="text-sm text-muted-foreground italic">No roles assigned</span>
+                    )}
+                    <button
+                      onClick={() => setIsAddRoleModalOpen(true)}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border border-dashed border-teal-400 text-teal-500 hover:bg-teal-400/10 transition-colors"
+                    >
+                      <Plus className="h-3 w-3" />
+                      Add
+                    </button>
+                  </div>
                 </div>
 
                 {/* Person Details */}
@@ -865,6 +1282,7 @@ function SidePanelContent({
                     <div className="space-y-3">
                       <DetailRow label="First Name" value={contactDetails.personDetails.firstName} />
                       <DetailRow label="Last Name" value={contactDetails.personDetails.lastName || '—'} />
+                      <DetailRow label="Email" value={contactDetails.personDetails.email || '—'} />
                       <DetailRow label="Mobile" value={contactDetails.personDetails.mobileNumber || '—'} />
                       <DetailRow label="Country" value={contactDetails.personDetails.country || '—'} />
                       <DetailRow label="Area" value={contactDetails.personDetails.area || '—'} />
@@ -884,58 +1302,146 @@ function SidePanelContent({
                     </div>
                   </div>
                 )}
+
+                {/* Role Modals */}
+                <Modal
+                  isOpen={isAddRoleModalOpen}
+                  onClose={() => setIsAddRoleModalOpen(false)}
+                  title="Add Role"
+                  accentColor="teal"
+                >
+                  <RoleForm
+                    contactId={contact.id}
+                    existingRoleTypes={existingRoleTypes}
+                    onSubmit={handleAddRole}
+                    onCancel={() => setIsAddRoleModalOpen(false)}
+                    isLoading={isAddingRole}
+                  />
+                </Modal>
+
+                <Modal
+                  isOpen={!!editingRole}
+                  onClose={() => setEditingRole(null)}
+                  title="Edit Role"
+                  accentColor="teal"
+                >
+                  {editingRole && (
+                    <RoleForm
+                      contactId={contact.id}
+                      existingRoleTypes={existingRoleTypes}
+                      isEditMode={true}
+                      editRoleType={editingRole.type}
+                      editRole={editingRole.role}
+                      onSubmit={handleUpdateRole}
+                      onCancel={() => setEditingRole(null)}
+                      isLoading={isUpdatingRole}
+                    />
+                  )}
+                </Modal>
+
+                <ConfirmModal
+                  isOpen={!!removingRole}
+                  onClose={() => setRemovingRole(null)}
+                  onConfirm={handleRemoveRole}
+                  title="Remove Role"
+                  message={`Are you sure you want to remove the ${removingRole?.type === 'hnc_member' ? 'HNC Member' : removingRole?.type === 'player' ? 'Player' : 'Partner'} role? This action cannot be undone.`}
+                  confirmText="Remove"
+                  variant="danger"
+                  isLoading={isRemovingRole}
+                />
               </div>
             )}
 
-            {/* Roles Tab */}
-            {activeTab === 'roles' && (
-              <div className="p-4 flex flex-col h-full">
-                {/* Empty State */}
-                <div className="flex-1 flex flex-col items-center justify-center py-8">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-3">
-                    <UserCog className="h-6 w-6 text-muted-foreground" />
+            {/* Status Tab */}
+            {activeTab === 'status' && (
+              <div className="p-4 space-y-4">
+                {/* Current Status Display */}
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Current Status
+                  </label>
+                  <div className="p-3 rounded-md bg-muted/30 border border-border">
+                    <StatusBadge status={(contactDetails?.isActive ?? contact.isActive) ? 'active' : 'inactive'} />
                   </div>
-                  <p className="text-sm text-muted-foreground text-center">No roles assigned</p>
-                  <p className="text-xs text-muted-foreground/70 text-center mt-1">
-                    Roles define how this contact interacts with brands
-                  </p>
                 </div>
-                {/* Add Role Button */}
-                <button
-                  className="mt-auto inline-flex items-center justify-center gap-2 h-9 rounded-md border-2 border-teal-400 text-teal-500 text-sm font-medium hover:bg-teal-400/10 transition-colors"
-                  onClick={() => {
-                    // TODO: Implement add role modal (FES-07/08)
-                    console.log('Add role clicked');
-                  }}
-                >
-                  <UserPlus className="h-4 w-4" />
-                  Add Role
-                </button>
+
+                {/* Change Status */}
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Change Status
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={pendingStatus || ''}
+                      onChange={(e) => setPendingStatus(e.target.value as 'active' | 'inactive' | '')}
+                      disabled={isStatusChanging}
+                      className="w-full h-10 rounded-md border border-input bg-background pl-3 pr-8 text-sm appearance-none cursor-pointer disabled:opacity-50"
+                    >
+                      <option value="">Select new status...</option>
+                      {(contactDetails?.isActive ?? contact.isActive) ? (
+                        <option value="inactive">Inactive</option>
+                      ) : (
+                        <option value="active">Active</option>
+                      )}
+                    </select>
+                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Inline confirmation */}
+                {pendingStatus && (
+                  <div className="p-3 rounded-md bg-muted/50 border border-border">
+                    <p className="text-sm text-foreground mb-3">
+                      Change status to <StatusBadge status={pendingStatus as 'active' | 'inactive'} />?
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={confirmStatusChange}
+                        disabled={isStatusChanging}
+                        className="flex-1 h-9 rounded-md bg-teal-400/80 text-white text-sm font-medium hover:bg-teal-400 transition-colors disabled:opacity-50"
+                      >
+                        {isStatusChanging ? (
+                          <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                        ) : (
+                          'Confirm'
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setPendingStatus('')}
+                        disabled={isStatusChanging}
+                        className="flex-1 h-9 rounded-md border border-input text-foreground text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
             {/* Notes Tab */}
             {activeTab === 'notes' && (
-              <div className="p-4 flex flex-col h-full">
-                <label className="text-sm font-medium text-muted-foreground mb-2">
-                  Notes
-                </label>
-                <textarea
-                  value={notesValue}
-                  onChange={(e) => setNotesValue(e.target.value)}
-                  onBlur={handleNotesSave}
-                  placeholder="Add notes about this contact..."
-                  className="flex-1 min-h-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 placeholder:italic focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                />
-                {isSavingNotes && (
-                  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+              <div className="p-4 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Internal Notes
+                  </label>
+                  <textarea
+                    value={notesValue}
+                    onChange={(e) => setNotesValue(e.target.value)}
+                    onBlur={handleNotesSave}
+                    placeholder="Add notes about this contact..."
+                    className="w-full min-h-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 placeholder:italic focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                  />
+                </div>
+                {isSavingNotes ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Loader2 className="h-3 w-3 animate-spin" />
                     Saving...
                   </div>
-                )}
-                {!isSavingNotes && notesValue !== (contactDetails?.personDetails?.notes || contactDetails?.organizationDetails?.notes || '') && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Changes will be saved when you click away
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Changes are saved automatically when you click away.
                   </p>
                 )}
               </div>

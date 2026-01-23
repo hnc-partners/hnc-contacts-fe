@@ -147,3 +147,101 @@ export const TYPE_COLORS: Record<ContactType, { bg: string; text: string }> = {
   person: { bg: 'bg-blue-100 dark:bg-blue-900', text: 'text-blue-700 dark:text-blue-300' },
   organization: { bg: 'bg-purple-100 dark:bg-purple-900', text: 'text-purple-700 dark:text-purple-300' },
 };
+
+// ===== ROLE TYPES =====
+
+export type RoleType = 'player' | 'partner' | 'hnc_member';
+
+export interface Player {
+  id: string;
+  contactId: string | null;
+  shortName: string;
+  playerStatus: 'active' | 'inactive';
+  preferredCurrency: string | null;
+  paymentMethod: string | null;
+  joinDate: string | null;
+  isAnonymous: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Partner {
+  id: string;
+  contactId: string | null;
+  shortName: string;
+  partnerStatus: 'active' | 'inactive';
+  canBeUpstream: boolean;
+  canBeDownstream: boolean;
+  preferredCurrency: string | null;
+  joinDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HncMember {
+  id: string;
+  contactId: string | null;
+  memberCode: string;
+  fullName: string;
+  memberType: 'founder' | 'employee';
+  department: string | null;
+  position: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContactRoles {
+  players: Player[];
+  partners: Partner[];
+  hncMembers: HncMember[];
+}
+
+// ===== CREATE ROLE DTOs =====
+
+export interface CreatePlayerDto {
+  contactId: string;
+  shortName: string;
+  playerStatus?: 'active' | 'inactive';
+  preferredCurrency?: string | null;
+  paymentMethod?: string | null;
+}
+
+export interface CreatePartnerDto {
+  contactId: string;
+  shortName: string;
+  partnerStatus?: 'active' | 'inactive';
+  canBeUpstream?: boolean;
+  canBeDownstream?: boolean;
+}
+
+export interface CreateHncMemberDto {
+  contactId: string;
+  fullName: string;
+  memberType: 'founder' | 'employee';
+  memberCode: string;
+  joinedDate: string;
+  department?: string | null;
+}
+
+// ===== UPDATE ROLE DTOs =====
+
+export interface UpdatePlayerDto {
+  shortName?: string;
+  playerStatus?: 'active' | 'inactive';
+  preferredCurrency?: string | null;
+  paymentMethod?: string | null;
+}
+
+export interface UpdatePartnerDto {
+  shortName?: string;
+  partnerStatus?: 'active' | 'inactive';
+  canBeUpstream?: boolean;
+  canBeDownstream?: boolean;
+}
+
+export interface UpdateHncMemberDto {
+  fullName?: string;
+  memberType?: 'founder' | 'employee';
+  department?: string | null;
+}
