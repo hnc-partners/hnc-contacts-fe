@@ -7,6 +7,7 @@
 import { toast } from 'sonner';
 import { MoreVertical, Copy, Trash2 } from 'lucide-react';
 import {
+  Button,
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -17,7 +18,7 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
-} from '@/components/ui/dropdown-menu';
+} from '@hnc-partners/ui-components';
 
 interface ActionsDropdownProps {
   onView: () => void;
@@ -43,12 +44,14 @@ export function ActionsDropdown({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={(e) => e.stopPropagation()}
-          className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          className="h-8 w-8"
         >
           <MoreVertical className="h-4 w-4" />
-        </button>
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Contact Actions</DropdownMenuLabel>

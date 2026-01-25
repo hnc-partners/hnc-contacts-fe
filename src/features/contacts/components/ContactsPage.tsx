@@ -5,13 +5,15 @@
  * Handles list view, side panel, modals, and all UI state.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { Button } from '@hnc-partners/ui-components';
 import { Layout } from '@/components/Layout';
 import { FilterDropdown } from '@/components/FilterDropdown';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { contactsApi } from '@/services/contacts-api';
+import { formatDate, getJoinDateRange } from '@/lib/utils';
 import {
   Loader2,
   Users,
@@ -95,6 +97,9 @@ export function ContactsPage() {
   // Content area ref for scroll-to-top on page change
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // Compute join date range from filter value
+  const joinDateRange = useMemo(() => getJoinDateRange(joinDateFilter), [joinDateFilter]);
+
   // Query hooks
   const { data: contactsResponse, isLoading, error } = useContacts({
     isActive:
@@ -102,6 +107,7 @@ export function ContactsPage() {
     contactType: filterType || undefined,
     search: searchQuery || undefined,
     limit: 500,
+    ...joinDateRange,
   });
 
   const { data: contactDetails, isLoading: isDetailsLoading } = useContact(
@@ -294,13 +300,13 @@ export function ContactsPage() {
             {/* Header Row - Title and Add Button */}
             <div className="flex items-center justify-between mb-2">
               <h1 className="text-2xl font-semibold text-foreground">Contacts</h1>
-              <button
+              <Button
+                size="sm"
                 onClick={() => setIsCreateModalOpen(true)}
-                className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-teal-400 text-white text-sm font-medium hover:bg-teal-500 transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 Add Contact
-              </button>
+              </Button>
             </div>
 
             {/* Breadcrumb */}
@@ -320,13 +326,13 @@ export function ContactsPage() {
               {/* Left side - Filters toggle, Rows select */}
               <div className="flex items-center gap-3">
                 {/* Filters Toggle */}
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setFiltersExpanded(!filtersExpanded)}
-                  className={`inline-flex items-center gap-2 h-9 px-3 rounded-md border text-sm font-medium transition-colors ${
-                    filtersExpanded || hasActiveFilters
-                      ? 'border-foreground/30 bg-accent text-foreground'
-                      : 'border-input bg-background text-muted-foreground hover:bg-muted'
-                  }`}
+                  className={filtersExpanded || hasActiveFilters
+                    ? 'border-foreground/30 bg-accent text-foreground'
+                    : ''}
                 >
                   <SlidersHorizontal className="h-4 w-4" />
                   Filters
@@ -342,7 +348,7 @@ export function ContactsPage() {
                       filtersExpanded ? 'rotate-180' : ''
                     }`}
                   />
-                </button>
+                </Button>
 
                 {/* Rows per page */}
                 <div className="w-[80px]">
@@ -414,13 +420,15 @@ export function ContactsPage() {
 
                 {/* Clear All Button */}
                 {hasActiveFilters && (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={clearFilters}
-                    className="inline-flex items-center gap-1.5 h-8 px-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-muted-foreground hover:text-foreground"
                   >
                     <X className="h-3.5 w-3.5" />
                     Clear all
-                  </button>
+                  </Button>
                 )}
               </div>
             )}
@@ -454,12 +462,13 @@ export function ContactsPage() {
                     : 'No contacts have been created yet.'}
                 </p>
                 {hasActiveFilters && (
-                  <button
+                  <Button
+                    variant="link"
                     onClick={clearFilters}
-                    className="mt-4 text-sm text-foreground hover:text-muted-foreground underline"
+                    className="mt-4"
                   >
                     Clear filters
-                  </button>
+                  </Button>
                 )}
               </div>
             )}
@@ -472,9 +481,11 @@ export function ContactsPage() {
                     <thead className="bg-muted/80 border-b border-border">
                       <tr>
                         <th className="w-[25%] px-4 py-2.5 text-left">
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleSort('displayName')}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-foreground/70 uppercase tracking-wider hover:text-foreground transition-colors"
+                            className="h-auto p-0 inline-flex items-center gap-1 text-xs font-semibold text-foreground/70 uppercase tracking-wider hover:text-foreground hover:bg-transparent"
                           >
                             Name
                             {sortField === 'displayName' ? (
@@ -486,7 +497,7 @@ export function ContactsPage() {
                             ) : (
                               <ArrowUpDown className="h-3 w-3 opacity-50" />
                             )}
-                          </button>
+                          </Button>
                         </th>
                         {!selectedContact && (
                           <th className="w-[15%] px-4 py-2.5 text-left">
@@ -546,20 +557,20 @@ export function ContactsPage() {
                           {!selectedContact && (
                             <td className="px-4 py-2 whitespace-nowrap">
                               <span className="text-sm text-muted-foreground">
-                                {'\u2014'}
+                                {contact.personDetails?.firstName || '\u2014'}
                               </span>
                             </td>
                           )}
                           {!selectedContact && (
                             <td className="px-4 py-2 whitespace-nowrap">
                               <span className="text-sm text-muted-foreground">
-                                {'\u2014'}
+                                {contact.personDetails?.lastName || '\u2014'}
                               </span>
                             </td>
                           )}
                           <td className="px-4 py-2 whitespace-nowrap">
                             <span className="text-sm text-muted-foreground">
-                              {'\u2014'}
+                              {formatDate(contact.joinDate) || '\u2014'}
                             </span>
                           </td>
                           <td className="px-4 py-2 whitespace-nowrap text-right">
@@ -654,43 +665,51 @@ export function ContactsPage() {
 
                   {/* Right - Navigation controls */}
                   <div className="flex items-center gap-1">
-                    <button
+                    <Button
+                      variant="outline"
+                      size="icon"
                       onClick={() => setCurrentPage(1)}
                       disabled={currentPage === 1}
-                      className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="h-8 w-8"
                       title="First page"
                     >
                       <ChevronsLeft className="h-4 w-4" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
-                      className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="h-8 w-8"
                       title="Previous page"
                     >
                       <ChevronLeft className="h-4 w-4" />
-                    </button>
+                    </Button>
 
                     <span className="mx-2 text-sm text-muted-foreground">
                       Page {currentPage} of {totalPages}
                     </span>
 
-                    <button
+                    <Button
+                      variant="outline"
+                      size="icon"
                       onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages || totalPages === 0}
-                      className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="h-8 w-8"
                       title="Next page"
                     >
                       <ChevronRight className="h-4 w-4" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
                       onClick={() => setCurrentPage(totalPages)}
                       disabled={currentPage === totalPages || totalPages === 0}
-                      className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-input bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="h-8 w-8"
                       title="Last page"
                     >
                       <ChevronsRight className="h-4 w-4" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </>

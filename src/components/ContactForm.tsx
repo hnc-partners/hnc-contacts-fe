@@ -3,6 +3,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AlertCircle, User, Building2 } from 'lucide-react';
+import { Button } from '@hnc-partners/ui-components';
 import type { CreateContactDto, ContactWithDetails, UpdateContactDto } from '@/types/contacts';
 
 // ===== VALIDATION SCHEMA =====
@@ -78,6 +79,9 @@ export function ContactForm({
   // Determine initial values from contact data or defaults
   const getDefaultValues = (): ContactFormData => {
     if (contact) {
+      // Format joinDate for date input (YYYY-MM-DD)
+      const joinDateValue = contact.joinDate ? contact.joinDate.split('T')[0] : '';
+
       if (contact.contactType === 'person' && contact.personDetails) {
         return {
           contactType: 'person',
@@ -86,7 +90,7 @@ export function ContactForm({
           email: contact.personDetails.email || '',
           mobileNumber: contact.personDetails.mobileNumber || '',
           country: contact.personDetails.country || '',
-          joinDate: '',
+          joinDate: joinDateValue,
           // Org fields (unused but required by schema)
           legalName: '',
           taxId: '',
@@ -99,7 +103,7 @@ export function ContactForm({
           taxId: contact.organizationDetails.taxId || '',
           registrationNumber: contact.organizationDetails.registrationNumber || '',
           country: contact.organizationDetails.country || '',
-          joinDate: '',
+          joinDate: joinDateValue,
           // Person fields (unused but required by schema)
           firstName: '',
           lastName: '',
@@ -210,8 +214,9 @@ export function ContactForm({
         name="contactType"
         render={({ field }) => (
           <div className={`flex rounded-lg border border-border p-1 bg-muted/30 ${isEditMode ? 'pointer-events-none opacity-50' : ''}`}>
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => !isEditMode && field.onChange('person')}
               disabled={isEditMode}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
@@ -222,9 +227,10 @@ export function ContactForm({
             >
               <User className="h-4 w-4" />
               Person
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => !isEditMode && field.onChange('organization')}
               disabled={isEditMode}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
@@ -235,7 +241,7 @@ export function ContactForm({
             >
               <Building2 className="h-4 w-4" />
               Organization
-            </button>
+            </Button>
           </div>
         )}
       />
@@ -416,23 +422,24 @@ export function ContactForm({
 
       {/* Footer Actions */}
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="h-9 px-4 rounded-md border border-input text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="submit"
+          size="sm"
           disabled={isSubmitting}
-          className="h-9 px-4 rounded-md bg-teal-400 text-white text-sm font-medium hover:bg-teal-500 transition-colors disabled:opacity-50"
         >
           {isSubmitting
             ? (isEditMode ? 'Updating...' : 'Creating...')
             : (isEditMode ? 'Update Contact' : 'Create Contact')}
-        </button>
+        </Button>
       </div>
     </form>
   );

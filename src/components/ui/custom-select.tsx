@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { Button } from '@hnc-partners/ui-components';
 import { cn } from '@/lib/utils';
 
 export interface SelectOption {
@@ -55,8 +56,9 @@ export function CustomSelect({
 
   return (
     <div className="relative" ref={ref}>
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={() => !disabled && setOpen(!open)}
         disabled={disabled}
         className={cn(
@@ -72,23 +74,24 @@ export function CustomSelect({
           {selectedOption?.label || placeholder}
         </span>
         <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
+      </Button>
 
       {open && (
         <div className="absolute top-full left-0 mt-3 z-50 w-full rounded-xl bg-popover shadow-lg ring-1 ring-black/5 dark:ring-white/10 p-1.5">
           {options.map((option) => (
-            <button
+            <Button
               key={option.value}
               type="button"
+              variant="ghost"
               onClick={() => { onChange(option.value); setOpen(false); }}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+              className={`w-full text-left justify-start px-3 py-2 rounded-lg text-sm transition-colors ${
                 value === option.value
                   ? 'text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/20 font-medium'
                   : 'text-foreground hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-700 dark:hover:text-teal-300'
               }`}
             >
               {option.label}
-            </button>
+            </Button>
           ))}
         </div>
       )}

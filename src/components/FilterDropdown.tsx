@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronDown, X } from 'lucide-react';
+import { Button } from '@hnc-partners/ui-components';
 
 // ===== FILTER DROPDOWN COMPONENT =====
 
@@ -58,8 +59,9 @@ export function FilterDropdown({ label, value, options, onChange }: FilterDropdo
 
   return (
     <div className="relative" ref={ref}>
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={() => setOpen(!open)}
         className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-sm transition-colors ${
           hasValue
@@ -83,23 +85,24 @@ export function FilterDropdown({ label, value, options, onChange }: FilterDropdo
             <X className="h-3 w-3" />
           </span>
         )}
-      </button>
+      </Button>
 
       {open && (
         <div className="absolute top-full left-0 mt-2 z-50 min-w-[160px] rounded-xl bg-popover shadow-lg ring-1 ring-black/5 dark:ring-white/10 p-1.5">
           {options.filter((o) => o.value !== '').map((option) => (
-            <button
+            <Button
               key={option.value}
               type="button"
+              variant="ghost"
               onClick={() => { onChange(option.value); setOpen(false); }}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+              className={`w-full text-left justify-start px-3 py-2 rounded-lg text-sm transition-colors ${
                 value === option.value
                   ? 'text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/20 font-medium'
                   : 'text-foreground hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-700 dark:hover:text-teal-300'
               }`}
             >
               {option.label}
-            </button>
+            </Button>
           ))}
         </div>
       )}

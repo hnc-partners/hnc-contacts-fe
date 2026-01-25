@@ -128,5 +128,5 @@ Endpoint for generating/viewing commission reports per contact.
 
 ## Notes
 
-- All endpoints should follow the existing API patterns (x-api-key auth, JSON responses with `{ data: ... }` wrapper, pagination with `{ page, limit, total, totalPages }`)
+- All endpoints should follow the existing API patterns (x-api-key auth, JSON responses with `{ data: ... }` wrapper, pagination in `meta` field with `{ page, limit, total, totalPages }`)
 - All endpoints should support the standard error format used by the contacts service

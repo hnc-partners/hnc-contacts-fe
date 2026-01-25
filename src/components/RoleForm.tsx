@@ -2,6 +2,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AlertCircle, Gamepad2, Handshake, Users } from 'lucide-react';
+import { Button } from '@hnc-partners/ui-components';
 import { CustomSelect } from '@/components/ui/custom-select';
 import type {
   RoleType,
@@ -97,10 +98,10 @@ const MEMBER_TYPE_OPTIONS = [
 
 // ===== ROLE TYPE CONFIG =====
 
-const ROLE_TYPE_CONFIG: Record<RoleType, { label: string; icon: React.ReactNode }> = {
-  player: { label: 'Player', icon: <Gamepad2 className="h-4 w-4" /> },
-  partner: { label: 'Partner', icon: <Handshake className="h-4 w-4" /> },
-  hnc_member: { label: 'HNC Member', icon: <Users className="h-4 w-4" /> },
+const ROLE_TYPE_CONFIG: Record<RoleType, { label: string; Icon: typeof Gamepad2 }> = {
+  player: { label: 'Player', Icon: Gamepad2 },
+  partner: { label: 'Partner', Icon: Handshake },
+  hnc_member: { label: 'HNC Member', Icon: Users },
 };
 
 // ===== PROPS =====
@@ -313,9 +314,10 @@ export function RoleForm({
               const isActive = field.value === type;
 
               return (
-                <button
+                <Button
                   key={type}
                   type="button"
+                  variant="ghost"
                   onClick={() => !disabled && field.onChange(type)}
                   disabled={disabled}
                   className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all ${
@@ -327,9 +329,9 @@ export function RoleForm({
                   }`}
                   title={disabled ? 'Already assigned' : undefined}
                 >
-                  {config.icon}
+                  <config.Icon className="h-4 w-4" />
                   {config.label}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -590,21 +592,22 @@ export function RoleForm({
       )}
 
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={onCancel}
           disabled={isLoading}
-          className="h-9 px-4 rounded-md border border-input text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="submit"
+          size="sm"
           disabled={isLoading || allRolesAssigned}
-          className="h-9 px-4 rounded-md bg-teal-400 text-white text-sm font-medium hover:bg-teal-500 transition-colors disabled:opacity-50"
         >
           {isLoading ? (isEditMode ? 'Updating...' : 'Adding...') : (isEditMode ? 'Update Role' : 'Add Role')}
-        </button>
+        </Button>
       </div>
     </form>
   );

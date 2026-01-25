@@ -21,11 +21,13 @@ export interface Contact {
   contactType: ContactType;
   displayName: string;
   isActive: boolean;
+  joinDate: string | null;
   createdAt: string;
   updatedAt: string;
   createdBy: string | null;
   updatedBy: string | null;
   v2ParticipantId: number | null;
+  personDetails?: { firstName: string; lastName: string | null } | null;
 }
 
 /**
@@ -118,7 +120,7 @@ export interface UpdateContactDto {
 
 export interface ContactsListResponse {
   data: Contact[];
-  pagination: {
+  meta: {
     total: number;
     page: number;
     limit: number;
@@ -134,6 +136,8 @@ export interface ContactsListParams {
   limit?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  joinDateFrom?: string;
+  joinDateTo?: string;
 }
 
 // ===== STATUS COLORS =====
@@ -246,4 +250,51 @@ export interface UpdateHncMemberDto {
   fullName?: string;
   memberType?: 'founder' | 'employee';
   department?: string | null;
+}
+
+// ===== GAMING ACCOUNT TYPES =====
+
+export type GamingAccountStatus = 'active' | 'untagged' | 'dormant' | 'closed';
+
+/**
+ * Gaming account from API
+ * Matches gaming-accounts service response structure
+ */
+export interface GamingAccount {
+  id: string;
+  brandId: string;
+  extAccountId: string | null;
+  intAccountId: number | null;
+  nickname: string;
+  email: string | null;
+  status: GamingAccountStatus;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  v2Id: number | null;
+  owner?: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    country: string | null;
+  } | null;
+}
+
+export interface GamingAccountsListResponse {
+  data: GamingAccount[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface GamingAccountsListParams {
+  brandId?: string;
+  status?: GamingAccountStatus;
+  search?: string;
+  page?: number;
+  limit?: number;
 }

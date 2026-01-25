@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { Button } from '@hnc-partners/ui-components';
 
 interface ModalProps {
   isOpen: boolean;
@@ -62,12 +63,14 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onClose}
-            className="p-1 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            className="h-8 w-8"
           >
             <X className="h-5 w-5" />
-          </button>
+          </Button>
         </div>
 
         {/* Content */}
@@ -110,11 +113,6 @@ export function ConfirmModal({
   variant = 'danger',
   isLoading = false,
 }: ConfirmModalProps) {
-  const buttonColors = {
-    danger: 'text-red-600 hover:bg-muted',
-    warning: 'text-amber-600 hover:bg-muted',
-  };
-
   return (
     <Modal
       isOpen={isOpen}
@@ -138,13 +136,14 @@ export function ConfirmModal({
 
       {/* Actions */}
       <div className="flex items-center justify-end">
-        <button
+        <Button
+          variant={variant === 'danger' ? 'destructive' : 'ghost'}
+          size="sm"
           onClick={onConfirm}
           disabled={isLoading}
-          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors disabled:opacity-50 ${buttonColors[variant]}`}
         >
           {isLoading ? 'Deleting...' : confirmText}
-        </button>
+        </Button>
       </div>
     </Modal>
   );

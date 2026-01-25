@@ -9,3 +9,12 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+// Shell detection for Module Federation
+declare global {
+  interface Window {
+    __SHELL__?: boolean;
+  }
+}
+
+export {};

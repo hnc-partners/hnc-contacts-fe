@@ -8,9 +8,12 @@ importers:
 
   .:
     dependencies:
-      '@hnc-ms/auth-context':
-        specifier: link:/workspace/hnc-microservices/packages/auth-context
-        version: link:../hnc-microservices/packages/auth-context
+      '@hnc-partners/auth-context':
+        specifier: ^0.1.1
+        version: 0.1.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@hnc-partners/ui-components':
+        specifier: link:/workspace/hnc-microservices/packages/ui-components
+        version: link:../hnc-microservices/packages/ui-components
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.71.1(react@19.2.3))
@@ -512,6 +515,13 @@ packages:
 
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
+
+  '@hnc-partners/auth-context@0.1.1':
+    resolution: {integrity: sha512-gjoa/EpK9kaKzY/yMPTxM4weiHlAqqN65UBdDYfiSHgxV9XksOih5UcZQwlTquLHUKRZkN2Mx268GtcIIA/LCQ==, tarball: https://npm.pkg.github.com/download/@hnc-partners/auth-context/0.1.1/1c03bf73247d68877e16bb326b96d45486380beb}
+    engines: {node: '>=20'}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
 
   '@hookform/resolvers@5.2.2':
     resolution: {integrity: sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA==}
@@ -1972,6 +1982,11 @@ snapshots:
       react-dom: 19.2.3(react@19.2.3)
 
   '@floating-ui/utils@0.2.10': {}
+
+  '@hnc-partners/auth-context@0.1.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
 
   '@hookform/resolvers@5.2.2(react-hook-form@7.71.1(react@19.2.3))':
     dependencies:

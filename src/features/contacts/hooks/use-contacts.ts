@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { contactsApi, rolesApi } from '@/services/contacts-api';
+import { contactsApi, rolesApi, gamingAccountsApi } from '@/services/contacts-api';
 import type {
   Contact,
   ContactsListParams,
@@ -30,6 +30,7 @@ export const contactsKeys = {
   details: () => [...contactsKeys.all, 'detail'] as const,
   detail: (id: string) => [...contactsKeys.details(), id] as const,
   roles: (contactId: string) => [...contactsKeys.all, 'roles', contactId] as const,
+  gamingAccounts: (contactId: string) => [...contactsKeys.all, 'gaming-accounts', contactId] as const,
 };
 
 // ===== CONTACTS QUERIES =====
@@ -54,6 +55,23 @@ export function useContactRoles(contactId: string, enabled = true) {
     queryKey: contactsKeys.roles(contactId),
     queryFn: () => rolesApi.getAllRolesForContact(contactId),
     enabled,
+  });
+}
+
+/**
+ * Hook to fetch gaming accounts for a contact.
+ *
+ * NOTE: Currently returns empty array - backend integration pending.
+ * The gaming-accounts service needs contactId filtering support,
+ * which requires a junction table or integration with deals service.
+ */
+export function useContactGamingAccounts(contactId: string, enabled = true) {
+  return useQuery({
+    queryKey: contactsKeys.gamingAccounts(contactId),
+    queryFn: () => gamingAccountsApi.getByContactId(contactId),
+    enabled,
+    // Keep stale data while refetching since this is currently a stub
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 
