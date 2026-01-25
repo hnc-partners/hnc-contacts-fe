@@ -1,29 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AlertCircle, User, Building2 } from 'lucide-react';
-import type { ContactType, CreateContactDto, ContactWithDetails, UpdateContactDto } from '@/types/contacts';
+import type { CreateContactDto, ContactWithDetails, UpdateContactDto } from '@/types/contacts';
 
-// ===== VALIDATION SCHEMAS =====
+// ===== VALIDATION SCHEMA =====
 
-const personSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
+/**
+ * Unified contact schema with conditional validation via superRefine.
+ * This approach is simpler than discriminated unions and works better
+ * with react-hook-form's watch() for conditional field rendering.
+ */
+const contactFormSchema = z.object({
+  contactType: z.enum(['person', 'organization']),
+  // Person fields (validated only when contactType === 'person')
+  firstName: z.string().optional(),
   lastName: z.string().optional().nullable(),
   email: z.string().email('Invalid email address').optional().or(z.literal('')).nullable(),
   mobileNumber: z.string().optional().nullable(),
-  country: z.string().optional().nullable(),
-  joinDate: z.string().optional().nullable(),
-});
-
-const organizationSchema = z.object({
-  legalName: z.string().min(1, 'Legal name is required'),
+  // Organization fields (validated only when contactType === 'organization')
+  legalName: z.string().optional(),
   taxId: z.string().optional().nullable(),
   registrationNumber: z.string().optional().nullable(),
+  // Common fields
   country: z.string().optional().nullable(),
   joinDate: z.string().optional().nullable(),
+}).superRefine((data, ctx) => {
+  // Conditional validation based on contactType
+  if (data.contactType === 'person') {
+    if (!data.firstName || data.firstName.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['firstName'],
+        message: 'First name is required',
+      });
+    }
+  } else if (data.contactType === 'organization') {
+    if (!data.legalName || data.legalName.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['legalName'],
+        message: 'Legal name is required',
+      });
+    }
+  }
 });
 
-type PersonFormData = z.infer<typeof personSchema>;
-type OrganizationFormData = z.infer<typeof organizationSchema>;
+type ContactFormData = z.infer<typeof contactFormSchema>;
 
 // ===== PROPS =====
 
@@ -41,7 +65,7 @@ interface ContactFormProps {
  * ContactForm Component
  *
  * Dynamic form for creating or editing contacts (Person or Organization).
- * Features type selector styled as tabs, Zod validation, and teal accent colors.
+ * Uses react-hook-form with Zod validation and conditional field rendering.
  * In edit mode, the type selector is disabled (can't change Person to Org).
  */
 export function ContactForm({
@@ -51,97 +75,79 @@ export function ContactForm({
   contact,
   isEditMode = false,
 }: ContactFormProps) {
-  // Determine initial contact type from contact data or default to 'person'
-  const initialContactType = contact?.contactType || 'person';
-  const [contactType, setContactType] = useState<ContactType>(initialContactType);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Person form state - initialize from contact if in edit mode
-  const [personData, setPersonData] = useState<PersonFormData>(() => {
-    if (contact?.personDetails) {
-      return {
-        firstName: contact.personDetails.firstName,
-        lastName: contact.personDetails.lastName || '',
-        email: contact.personDetails.email || '',
-        mobileNumber: contact.personDetails.mobileNumber || '',
-        country: contact.personDetails.country || '',
-        joinDate: '',
-      };
-    }
-    return {
-      firstName: '',
-      lastName: '',
-      email: '',
-      mobileNumber: '',
-      country: '',
-      joinDate: '',
-    };
-  });
-
-  // Organization form state - initialize from contact if in edit mode
-  const [orgData, setOrgData] = useState<OrganizationFormData>(() => {
-    if (contact?.organizationDetails) {
-      return {
-        legalName: contact.organizationDetails.legalName,
-        taxId: contact.organizationDetails.taxId || '',
-        registrationNumber: contact.organizationDetails.registrationNumber || '',
-        country: contact.organizationDetails.country || '',
-        joinDate: '',
-      };
-    }
-    return {
-      legalName: '',
-      taxId: '',
-      registrationNumber: '',
-      country: '',
-      joinDate: '',
-    };
-  });
-
-  // Update form data when contact changes (e.g., when opening edit modal for different contact)
-  useEffect(() => {
+  // Determine initial values from contact data or defaults
+  const getDefaultValues = (): ContactFormData => {
     if (contact) {
-      setContactType(contact.contactType);
-      if (contact.personDetails) {
-        setPersonData({
+      if (contact.contactType === 'person' && contact.personDetails) {
+        return {
+          contactType: 'person',
           firstName: contact.personDetails.firstName,
           lastName: contact.personDetails.lastName || '',
           email: contact.personDetails.email || '',
           mobileNumber: contact.personDetails.mobileNumber || '',
           country: contact.personDetails.country || '',
           joinDate: '',
-        });
-      }
-      if (contact.organizationDetails) {
-        setOrgData({
+          // Org fields (unused but required by schema)
+          legalName: '',
+          taxId: '',
+          registrationNumber: '',
+        };
+      } else if (contact.contactType === 'organization' && contact.organizationDetails) {
+        return {
+          contactType: 'organization',
           legalName: contact.organizationDetails.legalName,
           taxId: contact.organizationDetails.taxId || '',
           registrationNumber: contact.organizationDetails.registrationNumber || '',
           country: contact.organizationDetails.country || '',
           joinDate: '',
-        });
+          // Person fields (unused but required by schema)
+          firstName: '',
+          lastName: '',
+          email: '',
+          mobileNumber: '',
+        };
       }
     }
-  }, [contact]);
+    // Default for new contact
+    return {
+      contactType: 'person',
+      firstName: '',
+      lastName: '',
+      email: '',
+      mobileNumber: '',
+      country: '',
+      joinDate: '',
+      legalName: '',
+      taxId: '',
+      registrationNumber: '',
+    };
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrors({});
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    control,
+    formState: { errors },
+  } = useForm<ContactFormData>({
+    resolver: zodResolver(contactFormSchema),
+    defaultValues: getDefaultValues(),
+  });
 
-    if (contactType === 'person') {
-      const result = personSchema.safeParse(personData);
-      if (!result.success) {
-        const fieldErrors: Record<string, string> = {};
-        result.error.errors.forEach((err) => {
-          if (err.path[0]) {
-            fieldErrors[err.path[0] as string] = err.message;
-          }
-        });
-        setErrors(fieldErrors);
-        return;
-      }
+  // Watch contactType to conditionally render fields
+  const contactType = watch('contactType');
 
-      const displayName = [personData.firstName, personData.lastName]
+  // Reset form when contact prop changes (e.g., opening edit modal for different contact)
+  useEffect(() => {
+    if (contact) {
+      reset(getDefaultValues());
+    }
+  }, [contact, reset]);
+
+  const onFormSubmit = (data: ContactFormData) => {
+    if (data.contactType === 'person') {
+      const displayName = [data.firstName, data.lastName]
         .filter(Boolean)
         .join(' ')
         .trim();
@@ -150,105 +156,89 @@ export function ContactForm({
         // For edit mode, send UpdateContactDto (no contactType)
         onSubmit({
           displayName,
-          firstName: personData.firstName,
-          lastName: personData.lastName || null,
-          email: personData.email || null,
-          mobileNumber: personData.mobileNumber || null,
-          country: personData.country || null,
-          joinDate: personData.joinDate || null,
+          firstName: data.firstName || '',
+          lastName: data.lastName || null,
+          email: data.email || null,
+          mobileNumber: data.mobileNumber || null,
+          country: data.country || null,
+          joinDate: data.joinDate || null,
         });
       } else {
         // For create mode, send CreateContactDto (with contactType)
         onSubmit({
           contactType: 'person',
           displayName,
-          firstName: personData.firstName,
-          lastName: personData.lastName || null,
-          email: personData.email || null,
-          mobileNumber: personData.mobileNumber || null,
-          country: personData.country || null,
-          joinDate: personData.joinDate || null,
+          firstName: data.firstName || '',
+          lastName: data.lastName || null,
+          email: data.email || null,
+          mobileNumber: data.mobileNumber || null,
+          country: data.country || null,
+          joinDate: data.joinDate || null,
         });
       }
     } else {
-      const result = organizationSchema.safeParse(orgData);
-      if (!result.success) {
-        const fieldErrors: Record<string, string> = {};
-        result.error.errors.forEach((err) => {
-          if (err.path[0]) {
-            fieldErrors[err.path[0] as string] = err.message;
-          }
-        });
-        setErrors(fieldErrors);
-        return;
-      }
-
       if (isEditMode) {
         // For edit mode, send UpdateContactDto (no contactType)
         onSubmit({
-          displayName: orgData.legalName,
-          legalName: orgData.legalName,
-          taxId: orgData.taxId || null,
-          registrationNumber: orgData.registrationNumber || null,
-          country: orgData.country || null,
-          joinDate: orgData.joinDate || null,
+          displayName: data.legalName || '',
+          legalName: data.legalName || '',
+          taxId: data.taxId || null,
+          registrationNumber: data.registrationNumber || null,
+          country: data.country || null,
+          joinDate: data.joinDate || null,
         });
       } else {
         // For create mode, send CreateContactDto (with contactType)
         onSubmit({
           contactType: 'organization',
-          displayName: orgData.legalName,
-          legalName: orgData.legalName,
-          taxId: orgData.taxId || null,
-          registrationNumber: orgData.registrationNumber || null,
-          country: orgData.country || null,
-          joinDate: orgData.joinDate || null,
+          displayName: data.legalName || '',
+          legalName: data.legalName || '',
+          taxId: data.taxId || null,
+          registrationNumber: data.registrationNumber || null,
+          country: data.country || null,
+          joinDate: data.joinDate || null,
         });
       }
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
       {/* Type Selector - Tab Style (disabled in edit mode) */}
-      <div className={`flex rounded-lg border border-border p-1 bg-muted/30 ${isEditMode ? 'pointer-events-none opacity-50' : ''}`}>
-        <button
-          type="button"
-          onClick={() => {
-            if (!isEditMode) {
-              setContactType('person');
-              setErrors({});
-            }
-          }}
-          disabled={isEditMode}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-            contactType === 'person'
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <User className="h-4 w-4" />
-          Person
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            if (!isEditMode) {
-              setContactType('organization');
-              setErrors({});
-            }
-          }}
-          disabled={isEditMode}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-            contactType === 'organization'
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Building2 className="h-4 w-4" />
-          Organization
-        </button>
-      </div>
+      <Controller
+        control={control}
+        name="contactType"
+        render={({ field }) => (
+          <div className={`flex rounded-lg border border-border p-1 bg-muted/30 ${isEditMode ? 'pointer-events-none opacity-50' : ''}`}>
+            <button
+              type="button"
+              onClick={() => !isEditMode && field.onChange('person')}
+              disabled={isEditMode}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                field.value === 'person'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <User className="h-4 w-4" />
+              Person
+            </button>
+            <button
+              type="button"
+              onClick={() => !isEditMode && field.onChange('organization')}
+              disabled={isEditMode}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                field.value === 'organization'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Building2 className="h-4 w-4" />
+              Organization
+            </button>
+          </div>
+        )}
+      />
 
       {/* Dynamic Form Fields */}
       {contactType === 'person' ? (
@@ -261,8 +251,7 @@ export function ContactForm({
             </label>
             <input
               type="text"
-              value={personData.firstName}
-              onChange={(e) => setPersonData({ ...personData, firstName: e.target.value })}
+              {...register('firstName')}
               className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
                 errors.firstName ? 'border-red-500' : 'border-input'
               }`}
@@ -271,7 +260,7 @@ export function ContactForm({
             {errors.firstName && (
               <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
                 <AlertCircle className="h-3.5 w-3.5" />
-                {errors.firstName}
+                {errors.firstName.message}
               </p>
             )}
           </div>
@@ -283,8 +272,7 @@ export function ContactForm({
             </label>
             <input
               type="text"
-              value={personData.lastName || ''}
-              onChange={(e) => setPersonData({ ...personData, lastName: e.target.value })}
+              {...register('lastName')}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Enter last name"
             />
@@ -297,8 +285,7 @@ export function ContactForm({
             </label>
             <input
               type="email"
-              value={personData.email || ''}
-              onChange={(e) => setPersonData({ ...personData, email: e.target.value })}
+              {...register('email')}
               className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
                 errors.email ? 'border-red-500' : 'border-input'
               }`}
@@ -307,7 +294,7 @@ export function ContactForm({
             {errors.email && (
               <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
                 <AlertCircle className="h-3.5 w-3.5" />
-                {errors.email}
+                {errors.email.message}
               </p>
             )}
           </div>
@@ -319,8 +306,7 @@ export function ContactForm({
             </label>
             <input
               type="tel"
-              value={personData.mobileNumber || ''}
-              onChange={(e) => setPersonData({ ...personData, mobileNumber: e.target.value })}
+              {...register('mobileNumber')}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Enter mobile number"
             />
@@ -333,8 +319,7 @@ export function ContactForm({
             </label>
             <input
               type="text"
-              value={personData.country || ''}
-              onChange={(e) => setPersonData({ ...personData, country: e.target.value })}
+              {...register('country')}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Enter country"
             />
@@ -347,8 +332,7 @@ export function ContactForm({
             </label>
             <input
               type="date"
-              value={personData.joinDate || ''}
-              onChange={(e) => setPersonData({ ...personData, joinDate: e.target.value })}
+              {...register('joinDate')}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
@@ -363,8 +347,7 @@ export function ContactForm({
             </label>
             <input
               type="text"
-              value={orgData.legalName}
-              onChange={(e) => setOrgData({ ...orgData, legalName: e.target.value })}
+              {...register('legalName')}
               className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
                 errors.legalName ? 'border-red-500' : 'border-input'
               }`}
@@ -373,7 +356,7 @@ export function ContactForm({
             {errors.legalName && (
               <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
                 <AlertCircle className="h-3.5 w-3.5" />
-                {errors.legalName}
+                {errors.legalName.message}
               </p>
             )}
           </div>
@@ -385,8 +368,7 @@ export function ContactForm({
             </label>
             <input
               type="text"
-              value={orgData.taxId || ''}
-              onChange={(e) => setOrgData({ ...orgData, taxId: e.target.value })}
+              {...register('taxId')}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Enter tax ID"
             />
@@ -399,8 +381,7 @@ export function ContactForm({
             </label>
             <input
               type="text"
-              value={orgData.registrationNumber || ''}
-              onChange={(e) => setOrgData({ ...orgData, registrationNumber: e.target.value })}
+              {...register('registrationNumber')}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Enter registration number"
             />
@@ -413,8 +394,7 @@ export function ContactForm({
             </label>
             <input
               type="text"
-              value={orgData.country || ''}
-              onChange={(e) => setOrgData({ ...orgData, country: e.target.value })}
+              {...register('country')}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Enter country"
             />
@@ -427,8 +407,7 @@ export function ContactForm({
             </label>
             <input
               type="date"
-              value={orgData.joinDate || ''}
-              onChange={(e) => setOrgData({ ...orgData, joinDate: e.target.value })}
+              {...register('joinDate')}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>

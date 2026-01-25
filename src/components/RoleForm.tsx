@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AlertCircle, Gamepad2, Handshake, Users } from 'lucide-react';
 import { CustomSelect } from '@/components/ui/custom-select';
@@ -12,33 +13,59 @@ import type {
   CreateHncMemberDto,
 } from '@/types/contacts';
 
-// ===== VALIDATION SCHEMAS =====
+// ===== VALIDATION SCHEMA =====
 
-const playerSchema = z.object({
-  shortName: z.string().min(1, 'Short name is required'),
+/**
+ * Unified role schema with conditional validation via superRefine.
+ * This approach handles the three distinct role types (Player, Partner, HNC Member)
+ * with their different field requirements in a single form.
+ */
+const roleFormSchema = z.object({
+  roleType: z.enum(['player', 'partner', 'hnc_member']),
+  // Player fields
+  shortName: z.string().optional(),
   playerStatus: z.enum(['active', 'inactive']).optional(),
   preferredCurrency: z.string().optional().nullable(),
   paymentMethod: z.string().optional().nullable(),
-});
-
-const partnerSchema = z.object({
-  shortName: z.string().min(1, 'Short name is required'),
+  // Partner fields (shortName is shared)
   partnerStatus: z.enum(['active', 'inactive']).optional(),
   canBeUpstream: z.boolean().optional(),
   canBeDownstream: z.boolean().optional(),
-});
-
-const hncMemberSchema = z.object({
-  fullName: z.string().min(1, 'Full name is required'),
-  memberType: z.enum(['founder', 'employee'], { required_error: 'Member type is required' }),
-  memberCode: z.string().min(1, 'Member code is required'),
-  joinedDate: z.string().min(1, 'Joined date is required'),
+  // HNC Member fields
+  fullName: z.string().optional(),
+  memberType: z.enum(['founder', 'employee']).optional(),
+  memberCode: z.string().optional(),
+  joinedDate: z.string().optional(),
   department: z.string().optional().nullable(),
+}).superRefine((data, ctx) => {
+  // Conditional validation based on roleType
+  if (data.roleType === 'player' || data.roleType === 'partner') {
+    if (!data.shortName || data.shortName.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['shortName'],
+        message: 'Short name is required',
+      });
+    }
+  } else if (data.roleType === 'hnc_member') {
+    if (!data.fullName || data.fullName.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['fullName'],
+        message: 'Full name is required',
+      });
+    }
+    if (!data.memberType) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['memberType'],
+        message: 'Member type is required',
+      });
+    }
+  }
 });
 
-type PlayerFormData = z.infer<typeof playerSchema>;
-type PartnerFormData = z.infer<typeof partnerSchema>;
-type HncMemberFormData = z.infer<typeof hncMemberSchema>;
+type RoleFormData = z.infer<typeof roleFormSchema>;
 
 // ===== CONSTANTS =====
 
@@ -95,7 +122,7 @@ interface RoleFormProps {
  * RoleForm Component
  *
  * Dynamic form for creating/editing roles (Player, Partner, HNC Member).
- * Uses real API field names (playerStatus, partnerStatus, preferredCurrency, etc.)
+ * Uses react-hook-form with Zod validation and conditional field rendering.
  */
 export function RoleForm({
   contactId,
@@ -113,145 +140,157 @@ export function RoleForm({
   );
   const initialRoleType = isEditMode && editRoleType ? editRoleType : (availableRoleTypes[0] || 'player');
 
-  const [roleType, setRoleType] = useState<RoleType>(initialRoleType);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Pre-fill helpers for edit mode
-  const getEditPlayerData = (): PlayerFormData => {
-    if (isEditMode && editRole && editRoleType === 'player') {
-      const player = editRole as Player;
-      return {
-        shortName: player.shortName,
-        playerStatus: player.playerStatus,
-        preferredCurrency: player.preferredCurrency || '',
-        paymentMethod: player.paymentMethod || '',
-      };
-    }
-    return { shortName: contactName || '', playerStatus: 'active', preferredCurrency: '', paymentMethod: '' };
-  };
-
-  const getEditPartnerData = (): PartnerFormData => {
-    if (isEditMode && editRole && editRoleType === 'partner') {
-      const partner = editRole as Partner;
-      return {
-        shortName: partner.shortName,
-        partnerStatus: partner.partnerStatus,
-        canBeUpstream: partner.canBeUpstream,
-        canBeDownstream: partner.canBeDownstream,
-      };
-    }
-    return { shortName: contactName || '', partnerStatus: 'active', canBeUpstream: false, canBeDownstream: false };
-  };
-
-  const getEditHncMemberData = (): HncMemberFormData => {
-    if (isEditMode && editRole && editRoleType === 'hnc_member') {
-      const member = editRole as HncMember;
-      return {
-        fullName: member.fullName,
-        memberType: member.memberType,
-        memberCode: member.memberCode,
-        joinedDate: '', // Not editable
-        department: member.department || '',
-      };
-    }
-    return { fullName: contactName || '', memberType: 'employee' as 'founder' | 'employee', memberCode: '', joinedDate: new Date().toISOString().split('T')[0], department: '' };
-  };
-
-  const [playerData, setPlayerData] = useState<PlayerFormData>(getEditPlayerData());
-  const [partnerData, setPartnerData] = useState<PartnerFormData>(getEditPartnerData());
-  const [hncMemberData, setHncMemberData] = useState<HncMemberFormData>(getEditHncMemberData());
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrors({});
-
-    if (roleType === 'player') {
-      const result = playerSchema.safeParse(playerData);
-      if (!result.success) {
-        const fieldErrors: Record<string, string> = {};
-        result.error.errors.forEach((err) => {
-          if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
-        });
-        setErrors(fieldErrors);
-        return;
+  // Build default values based on mode and existing role data
+  const getDefaultValues = (): RoleFormData => {
+    if (isEditMode && editRole && editRoleType) {
+      switch (editRoleType) {
+        case 'player': {
+          const player = editRole as Player;
+          return {
+            roleType: 'player',
+            shortName: player.shortName,
+            playerStatus: player.playerStatus,
+            preferredCurrency: player.preferredCurrency || '',
+            paymentMethod: player.paymentMethod || '',
+            // Unused fields
+            partnerStatus: 'active',
+            canBeUpstream: false,
+            canBeDownstream: false,
+            fullName: '',
+            memberType: 'employee',
+            memberCode: '',
+            joinedDate: '',
+            department: '',
+          };
+        }
+        case 'partner': {
+          const partner = editRole as Partner;
+          return {
+            roleType: 'partner',
+            shortName: partner.shortName,
+            partnerStatus: partner.partnerStatus,
+            canBeUpstream: partner.canBeUpstream,
+            canBeDownstream: partner.canBeDownstream,
+            // Unused fields
+            playerStatus: 'active',
+            preferredCurrency: '',
+            paymentMethod: '',
+            fullName: '',
+            memberType: 'employee',
+            memberCode: '',
+            joinedDate: '',
+            department: '',
+          };
+        }
+        case 'hnc_member': {
+          const member = editRole as HncMember;
+          return {
+            roleType: 'hnc_member',
+            fullName: member.fullName,
+            memberType: member.memberType,
+            memberCode: member.memberCode,
+            joinedDate: '',
+            department: member.department || '',
+            // Unused fields
+            shortName: '',
+            playerStatus: 'active',
+            preferredCurrency: '',
+            paymentMethod: '',
+            partnerStatus: 'active',
+            canBeUpstream: false,
+            canBeDownstream: false,
+          };
+        }
       }
+    }
 
+    // Default for new role
+    return {
+      roleType: initialRoleType,
+      shortName: contactName || '',
+      playerStatus: 'active',
+      preferredCurrency: '',
+      paymentMethod: '',
+      partnerStatus: 'active',
+      canBeUpstream: false,
+      canBeDownstream: false,
+      fullName: contactName || '',
+      memberType: 'employee',
+      memberCode: '',
+      joinedDate: new Date().toISOString().split('T')[0],
+      department: '',
+    };
+  };
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    control,
+    formState: { errors },
+  } = useForm<RoleFormData>({
+    resolver: zodResolver(roleFormSchema),
+    defaultValues: getDefaultValues(),
+  });
+
+  // Watch roleType to conditionally render fields
+  const roleType = watch('roleType');
+
+  const onFormSubmit = (data: RoleFormData) => {
+    if (data.roleType === 'player') {
       if (isEditMode) {
         const updateData: Record<string, unknown> = {
-          shortName: playerData.shortName,
-          playerStatus: playerData.playerStatus || 'active',
+          shortName: data.shortName,
+          playerStatus: data.playerStatus || 'active',
         };
-        if (playerData.preferredCurrency) updateData.preferredCurrency = playerData.preferredCurrency;
-        if (playerData.paymentMethod) updateData.paymentMethod = playerData.paymentMethod;
+        if (data.preferredCurrency) updateData.preferredCurrency = data.preferredCurrency;
+        if (data.paymentMethod) updateData.paymentMethod = data.paymentMethod;
         onSubmit('player', updateData);
       } else {
         const dto: CreatePlayerDto = {
           contactId,
-          shortName: playerData.shortName,
-          playerStatus: playerData.playerStatus || 'active',
+          shortName: data.shortName || '',
+          playerStatus: data.playerStatus || 'active',
         };
-        if (playerData.preferredCurrency) dto.preferredCurrency = playerData.preferredCurrency;
-        if (playerData.paymentMethod) dto.paymentMethod = playerData.paymentMethod as any;
+        if (data.preferredCurrency) dto.preferredCurrency = data.preferredCurrency;
+        if (data.paymentMethod) dto.paymentMethod = data.paymentMethod as any;
         onSubmit('player', dto);
       }
-    } else if (roleType === 'partner') {
-      const result = partnerSchema.safeParse(partnerData);
-      if (!result.success) {
-        const fieldErrors: Record<string, string> = {};
-        result.error.errors.forEach((err) => {
-          if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
-        });
-        setErrors(fieldErrors);
-        return;
-      }
-
+    } else if (data.roleType === 'partner') {
       if (isEditMode) {
         onSubmit('partner', {
-          shortName: partnerData.shortName,
-          partnerStatus: partnerData.partnerStatus || 'active',
-          canBeUpstream: partnerData.canBeUpstream ?? false,
-          canBeDownstream: partnerData.canBeDownstream ?? false,
+          shortName: data.shortName,
+          partnerStatus: data.partnerStatus || 'active',
+          canBeUpstream: data.canBeUpstream ?? false,
+          canBeDownstream: data.canBeDownstream ?? false,
         });
       } else {
         const dto: CreatePartnerDto = {
           contactId,
-          shortName: partnerData.shortName,
-          partnerStatus: partnerData.partnerStatus || 'active',
-          canBeUpstream: partnerData.canBeUpstream ?? false,
-          canBeDownstream: partnerData.canBeDownstream ?? false,
+          shortName: data.shortName || '',
+          partnerStatus: data.partnerStatus || 'active',
+          canBeUpstream: data.canBeUpstream ?? false,
+          canBeDownstream: data.canBeDownstream ?? false,
         };
         onSubmit('partner', dto);
       }
     } else {
-      const schema = isEditMode
-        ? hncMemberSchema.omit({ memberCode: true, joinedDate: true })
-        : hncMemberSchema;
-      const result = schema.safeParse(hncMemberData);
-      if (!result.success) {
-        const fieldErrors: Record<string, string> = {};
-        result.error.errors.forEach((err) => {
-          if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
-        });
-        setErrors(fieldErrors);
-        return;
-      }
-
       if (isEditMode) {
         const updateData: Record<string, unknown> = {
-          fullName: hncMemberData.fullName,
-          memberType: hncMemberData.memberType,
+          fullName: data.fullName,
+          memberType: data.memberType,
         };
-        if (hncMemberData.department) updateData.department = hncMemberData.department;
+        if (data.department) updateData.department = data.department;
         onSubmit('hnc_member', updateData);
       } else {
         const dto: CreateHncMemberDto = {
           contactId,
-          fullName: hncMemberData.fullName,
-          memberType: hncMemberData.memberType,
-          memberCode: hncMemberData.memberCode,
-          joinedDate: hncMemberData.joinedDate,
+          fullName: data.fullName || '',
+          memberType: data.memberType || 'employee',
+          memberCode: data.memberCode || '',
+          joinedDate: data.joinedDate || '',
         };
-        if (hncMemberData.department) dto.department = hncMemberData.department;
+        if (data.department) dto.department = data.department;
         onSubmit('hnc_member', dto);
       }
     }
@@ -261,40 +300,41 @@ export function RoleForm({
   const allRolesAssigned = !isEditMode && availableRoleTypes.length === 0;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
       {/* Role Type Selector */}
-      <div className="flex rounded-lg border border-border p-1 bg-muted/30">
-        {(['player', 'partner', 'hnc_member'] as RoleType[]).map((type) => {
-          const config = ROLE_TYPE_CONFIG[type];
-          const disabled = isRoleTypeDisabled(type);
-          const isActive = roleType === type;
+      <Controller
+        control={control}
+        name="roleType"
+        render={({ field }) => (
+          <div className="flex rounded-lg border border-border p-1 bg-muted/30">
+            {(['player', 'partner', 'hnc_member'] as RoleType[]).map((type) => {
+              const config = ROLE_TYPE_CONFIG[type];
+              const disabled = isRoleTypeDisabled(type);
+              const isActive = field.value === type;
 
-          return (
-            <button
-              key={type}
-              type="button"
-              onClick={() => {
-                if (!disabled) {
-                  setRoleType(type);
-                  setErrors({});
-                }
-              }}
-              disabled={disabled}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all ${
-                isActive
-                  ? 'bg-background text-foreground shadow-sm'
-                  : disabled
-                    ? 'text-muted-foreground/50 cursor-not-allowed'
-                    : 'text-muted-foreground hover:text-foreground'
-              }`}
-              title={disabled ? 'Already assigned' : undefined}
-            >
-              {config.icon}
-              {config.label}
-            </button>
-          );
-        })}
-      </div>
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => !disabled && field.onChange(type)}
+                  disabled={disabled}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all ${
+                    isActive
+                      ? 'bg-background text-foreground shadow-sm'
+                      : disabled
+                        ? 'text-muted-foreground/50 cursor-not-allowed'
+                        : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  title={disabled ? 'Already assigned' : undefined}
+                >
+                  {config.icon}
+                  {config.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      />
 
       {allRolesAssigned && (
         <div className="rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
@@ -315,8 +355,7 @@ export function RoleForm({
                 </label>
                 <input
                   type="text"
-                  value={playerData.shortName}
-                  onChange={(e) => setPlayerData({ ...playerData, shortName: e.target.value })}
+                  {...register('shortName')}
                   className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
                     errors.shortName ? 'border-red-500' : 'border-input'
                   }`}
@@ -325,37 +364,55 @@ export function RoleForm({
                 {errors.shortName && (
                   <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
                     <AlertCircle className="h-3.5 w-3.5" />
-                    {errors.shortName}
+                    {errors.shortName.message}
                   </p>
                 )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Status</label>
-                <CustomSelect
-                  value={playerData.playerStatus || 'active'}
-                  onChange={(v) => setPlayerData({ ...playerData, playerStatus: v as 'active' | 'inactive' })}
-                  options={STATUS_OPTIONS}
+                <Controller
+                  control={control}
+                  name="playerStatus"
+                  render={({ field }) => (
+                    <CustomSelect
+                      value={field.value || 'active'}
+                      onChange={(v) => field.onChange(v as 'active' | 'inactive')}
+                      options={STATUS_OPTIONS}
+                    />
+                  )}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Currency</label>
-                <CustomSelect
-                  value={playerData.preferredCurrency || ''}
-                  onChange={(v) => setPlayerData({ ...playerData, preferredCurrency: v })}
-                  options={CURRENCY_OPTIONS}
-                  placeholder="Select currency"
+                <Controller
+                  control={control}
+                  name="preferredCurrency"
+                  render={({ field }) => (
+                    <CustomSelect
+                      value={field.value || ''}
+                      onChange={(v) => field.onChange(v)}
+                      options={CURRENCY_OPTIONS}
+                      placeholder="Select currency"
+                    />
+                  )}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Payment Method</label>
-                <CustomSelect
-                  value={playerData.paymentMethod || ''}
-                  onChange={(v) => setPlayerData({ ...playerData, paymentMethod: v })}
-                  options={PAYMENT_METHOD_OPTIONS}
-                  placeholder="Select payment method"
+                <Controller
+                  control={control}
+                  name="paymentMethod"
+                  render={({ field }) => (
+                    <CustomSelect
+                      value={field.value || ''}
+                      onChange={(v) => field.onChange(v)}
+                      options={PAYMENT_METHOD_OPTIONS}
+                      placeholder="Select payment method"
+                    />
+                  )}
                 />
               </div>
             </div>
@@ -370,8 +427,7 @@ export function RoleForm({
                 </label>
                 <input
                   type="text"
-                  value={partnerData.shortName}
-                  onChange={(e) => setPartnerData({ ...partnerData, shortName: e.target.value })}
+                  {...register('shortName')}
                   className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
                     errors.shortName ? 'border-red-500' : 'border-input'
                   }`}
@@ -380,17 +436,23 @@ export function RoleForm({
                 {errors.shortName && (
                   <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
                     <AlertCircle className="h-3.5 w-3.5" />
-                    {errors.shortName}
+                    {errors.shortName.message}
                   </p>
                 )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Status</label>
-                <CustomSelect
-                  value={partnerData.partnerStatus || 'active'}
-                  onChange={(v) => setPartnerData({ ...partnerData, partnerStatus: v as 'active' | 'inactive' })}
-                  options={STATUS_OPTIONS}
+                <Controller
+                  control={control}
+                  name="partnerStatus"
+                  render={({ field }) => (
+                    <CustomSelect
+                      value={field.value || 'active'}
+                      onChange={(v) => field.onChange(v as 'active' | 'inactive')}
+                      options={STATUS_OPTIONS}
+                    />
+                  )}
                 />
               </div>
 
@@ -398,8 +460,7 @@ export function RoleForm({
                 <input
                   type="checkbox"
                   id="canBeUpstream"
-                  checked={partnerData.canBeUpstream || false}
-                  onChange={(e) => setPartnerData({ ...partnerData, canBeUpstream: e.target.checked })}
+                  {...register('canBeUpstream')}
                   className="h-4 w-4 rounded border-input"
                 />
                 <label htmlFor="canBeUpstream" className="text-sm font-medium text-foreground cursor-pointer">
@@ -411,8 +472,7 @@ export function RoleForm({
                 <input
                   type="checkbox"
                   id="canBeDownstream"
-                  checked={partnerData.canBeDownstream || false}
-                  onChange={(e) => setPartnerData({ ...partnerData, canBeDownstream: e.target.checked })}
+                  {...register('canBeDownstream')}
                   className="h-4 w-4 rounded border-input"
                 />
                 <label htmlFor="canBeDownstream" className="text-sm font-medium text-foreground cursor-pointer">
@@ -431,8 +491,7 @@ export function RoleForm({
                 </label>
                 <input
                   type="text"
-                  value={hncMemberData.fullName}
-                  onChange={(e) => setHncMemberData({ ...hncMemberData, fullName: e.target.value })}
+                  {...register('fullName')}
                   className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
                     errors.fullName ? 'border-red-500' : 'border-input'
                   }`}
@@ -441,7 +500,7 @@ export function RoleForm({
                 {errors.fullName && (
                   <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
                     <AlertCircle className="h-3.5 w-3.5" />
-                    {errors.fullName}
+                    {errors.fullName.message}
                   </p>
                 )}
               </div>
@@ -453,8 +512,7 @@ export function RoleForm({
                 </label>
                 <input
                   type="text"
-                  value={hncMemberData.memberCode}
-                  onChange={(e) => setHncMemberData({ ...hncMemberData, memberCode: e.target.value })}
+                  {...register('memberCode')}
                   className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
                     errors.memberCode ? 'border-red-500' : 'border-input'
                   }`}
@@ -464,7 +522,7 @@ export function RoleForm({
                 {errors.memberCode && (
                   <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
                     <AlertCircle className="h-3.5 w-3.5" />
-                    {errors.memberCode}
+                    {errors.memberCode.message}
                   </p>
                 )}
               </div>
@@ -474,17 +532,23 @@ export function RoleForm({
                   Member Type
                   <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-teal-400" title="Required" />
                 </label>
-                <CustomSelect
-                  value={hncMemberData.memberType || ''}
-                  onChange={(v) => setHncMemberData({ ...hncMemberData, memberType: v as 'founder' | 'employee' })}
-                  options={MEMBER_TYPE_OPTIONS}
-                  placeholder="Select member type"
-                  error={!!errors.memberType}
+                <Controller
+                  control={control}
+                  name="memberType"
+                  render={({ field }) => (
+                    <CustomSelect
+                      value={field.value || ''}
+                      onChange={(v) => field.onChange(v as 'founder' | 'employee')}
+                      options={MEMBER_TYPE_OPTIONS}
+                      placeholder="Select member type"
+                      error={!!errors.memberType}
+                    />
+                  )}
                 />
                 {errors.memberType && (
                   <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
                     <AlertCircle className="h-3.5 w-3.5" />
-                    {errors.memberType}
+                    {errors.memberType.message}
                   </p>
                 )}
               </div>
@@ -497,8 +561,7 @@ export function RoleForm({
                   </label>
                   <input
                     type="date"
-                    value={hncMemberData.joinedDate}
-                    onChange={(e) => setHncMemberData({ ...hncMemberData, joinedDate: e.target.value })}
+                    {...register('joinedDate')}
                     className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
                       errors.joinedDate ? 'border-red-500' : 'border-input'
                     }`}
@@ -506,7 +569,7 @@ export function RoleForm({
                   {errors.joinedDate && (
                     <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
                       <AlertCircle className="h-3.5 w-3.5" />
-                      {errors.joinedDate}
+                      {errors.joinedDate.message}
                     </p>
                   )}
                 </div>
@@ -516,8 +579,7 @@ export function RoleForm({
                 <label className="block text-sm font-medium text-foreground mb-1">Department</label>
                 <input
                   type="text"
-                  value={hncMemberData.department || ''}
-                  onChange={(e) => setHncMemberData({ ...hncMemberData, department: e.target.value })}
+                  {...register('department')}
                   className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="Enter department"
                 />
