@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button } from '@hnc-partners/ui-components';
-import { Layout } from '@/components/Layout';
+// Note: No Layout import - shell provides the layout when used as MF
 import { FilterDropdown } from '@/components/FilterDropdown';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { contactsApi } from '@/services/contacts-api';
@@ -287,8 +287,9 @@ export function ContactsPage() {
     document.removeEventListener('mouseup', handleMouseUp);
   };
 
+  // Note: No Layout wrapper - shell provides the layout when used as MF
   return (
-    <Layout>
+    <>
       <div className="flex h-full relative">
         {/* Main Content */}
         <div
@@ -787,6 +788,6 @@ export function ContactsPage() {
         onClose={() => setDeletingContact(null)}
         onConfirm={handleDeleteConfirm}
       />
-    </Layout>
+    </>
   );
 }
