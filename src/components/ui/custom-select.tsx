@@ -63,10 +63,10 @@ export function CustomSelect({
         disabled={disabled}
         className={cn(
           'w-full h-9 px-3 rounded-lg border-0 ring-1 bg-background text-sm text-left flex items-center justify-between cursor-pointer transition-all',
-          'focus:outline-none focus:ring-2 focus:ring-brand',
+          'focus:outline-none focus:ring-2 focus:ring-mf-accent',
           error ? 'ring-red-500' : 'ring-input',
           disabled && 'opacity-50 cursor-not-allowed',
-          open && 'ring-2 ring-brand',
+          open && 'ring-2 ring-mf-accent',
           className
         )}
       >
@@ -86,8 +86,8 @@ export function CustomSelect({
               onClick={() => { onChange(option.value); setOpen(false); }}
               className={`w-full text-left justify-start px-3 py-2 rounded-lg text-sm transition-colors ${
                 value === option.value
-                  ? 'text-brand bg-brand/5 dark:bg-brand/20 font-medium'
-                  : 'text-foreground hover:bg-brand/5 dark:hover:bg-brand/20 hover:text-brand'
+                  ? 'text-mf-accent bg-mf-accent/5 dark:bg-mf-accent/20 font-medium'
+                  : 'text-foreground hover:bg-mf-accent/5 dark:hover:bg-mf-accent/20 hover:text-mf-accent'
               }`}
             >
               {option.label}

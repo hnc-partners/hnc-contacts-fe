@@ -16,6 +16,10 @@ export default {
           DEFAULT: 'hsl(var(--brand))',
           foreground: 'hsl(var(--brand-foreground))',
         },
+        'mf-accent': {
+          DEFAULT: 'hsl(var(--mf-accent))',
+          foreground: 'hsl(var(--mf-accent-foreground))',
+        },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

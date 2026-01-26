@@ -253,7 +253,7 @@ export function ContactForm({
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
               First Name
-              <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-brand" title="Required" />
+              <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-mf-accent" title="Required" />
             </label>
             <input
               type="text"
@@ -349,7 +349,7 @@ export function ContactForm({
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
               Legal Name
-              <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-brand" title="Required" />
+              <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-mf-accent" title="Required" />
             </label>
             <input
               type="text"

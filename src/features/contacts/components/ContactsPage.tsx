@@ -337,7 +337,7 @@ export function ContactsPage() {
                   <SlidersHorizontal className="h-4 w-4" />
                   Filters
                   {hasActiveFilters && (
-                    <span className="px-1.5 py-0.5 text-xs bg-brand/80 text-white rounded-full">
+                    <span className="px-1.5 py-0.5 text-xs bg-mf-accent/80 text-white rounded-full">
                       {(filterStatus ? 1 : 0) +
                         (filterType ? 1 : 0) +
                         (joinDateFilter ? 1 : 0)}
@@ -730,7 +730,7 @@ export function ContactsPage() {
               {/* Resize Handle */}
               <div
                 onMouseDown={handleMouseDown}
-                className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-brand/50 active:bg-brand transition-colors group flex items-center justify-center z-10"
+                className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-mf-accent/50 active:bg-mf-accent transition-colors group flex items-center justify-center z-10"
               >
                 <div className="absolute left-[-6px] w-4 h-8 flex items-center justify-center rounded-sm border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
                   <GripVertical className="h-3 w-3 text-zinc-400 dark:text-zinc-500" />
