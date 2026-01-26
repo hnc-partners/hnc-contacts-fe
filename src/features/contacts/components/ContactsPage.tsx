@@ -289,7 +289,7 @@ export function ContactsPage() {
 
   return (
     <Layout>
-      <div className="flex h-[calc(100vh-56px)]">
+      <div className="flex h-full relative">
         {/* Main Content */}
         <div
           ref={contentRef}
@@ -719,7 +719,7 @@ export function ContactsPage() {
 
         {/* Side Panel with Resize Handle - Always rendered for animation */}
         <div
-          className={`fixed right-0 top-14 bottom-0 bg-background border-l border-border shadow-lg flex z-30 transition-transform duration-300 ease-out ${
+          className={`absolute right-0 top-0 bottom-0 bg-background border-l border-border shadow-lg flex z-30 transition-transform duration-300 ease-out ${
             selectedContact ? 'translate-x-0' : 'translate-x-full'
           }`}
           style={{ width: sidePanelWidth }}

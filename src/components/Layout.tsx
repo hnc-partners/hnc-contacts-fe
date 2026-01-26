@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { AppHeader } from './AppHeader';
 
 interface LayoutProps {
   /**
@@ -11,15 +10,13 @@ interface LayoutProps {
 /**
  * Layout
  *
- * Standard page layout with AppHeader and content area.
- * Left margin accounts for future sidebar (w-64 = 256px).
+ * Simple layout wrapper for shell integration.
+ * Shell provides header and sidebar; we just wrap content.
  */
 export function Layout({ children }: LayoutProps) {
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
-      <AppHeader />
-      {/* Main Content - ml-64 reserves space for sidebar */}
-      <main className="flex-1 lg:ml-64">{children}</main>
+    <div className="h-full flex flex-col bg-background overflow-hidden">
+      <main className="flex-1">{children}</main>
     </div>
   );
 }
