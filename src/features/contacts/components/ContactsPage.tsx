@@ -290,12 +290,11 @@ export function ContactsPage() {
   // Note: No Layout wrapper - shell provides the layout when used as MF
   return (
     <>
-      <div className="flex h-full relative">
+      <div className="flex h-full w-full overflow-hidden">
         {/* Main Content */}
         <div
           ref={contentRef}
           className="flex-1 flex flex-col overflow-y-auto transition-all duration-300"
-          style={{ marginRight: selectedContact ? sidePanelWidth : 0 }}
         >
           <div className="py-6 px-4 sm:px-6 lg:px-8">
             {/* Header Row - Title and Add Button */}
@@ -718,46 +717,49 @@ export function ContactsPage() {
           </div>
         </div>
 
-        {/* Side Panel with Resize Handle - Always rendered for animation */}
+        {/* Side Panel Container - Always rendered for animation, width animates */}
         <div
-          className={`absolute right-0 top-0 bottom-0 bg-background border-l border-border shadow-lg flex z-30 transition-transform duration-300 ease-out ${
-            selectedContact ? 'translate-x-0' : 'translate-x-full'
-          }`}
-          style={{ width: sidePanelWidth }}
+          className="flex-shrink-0 overflow-hidden transition-all duration-300 ease-out"
+          style={{ width: selectedContact ? sidePanelWidth : 0 }}
         >
-          {/* Resize Handle */}
-          <div
-            onMouseDown={handleMouseDown}
-            className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-teal-400/50 active:bg-teal-400 transition-colors group flex items-center justify-center"
-          >
-            <div className="absolute left-[-6px] w-4 h-8 flex items-center justify-center rounded-sm border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-              <GripVertical className="h-3 w-3 text-zinc-400 dark:text-zinc-500" />
+          {selectedContact && (
+            <div
+              className="relative bg-background border-l border-border shadow-lg flex h-full"
+              style={{ width: sidePanelWidth }}
+            >
+              {/* Resize Handle */}
+              <div
+                onMouseDown={handleMouseDown}
+                className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-teal-400/50 active:bg-teal-400 transition-colors group flex items-center justify-center z-10"
+              >
+                <div className="absolute left-[-6px] w-4 h-8 flex items-center justify-center rounded-sm border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                  <GripVertical className="h-3 w-3 text-zinc-400 dark:text-zinc-500" />
+                </div>
+              </div>
+              {/* Panel Content */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <SidePanel
+                  contact={selectedContact}
+                  contactDetails={selectedContactDetails}
+                  isLoading={isDetailsLoading}
+                  activeTab={sidePanelTab}
+                  onTabChange={setSidePanelTab}
+                  onClose={() => {
+                    setSelectedContact(null);
+                    setSelectedContactDetails(null);
+                  }}
+                  onEdit={() => {
+                    if (selectedContactDetails) {
+                      setEditingContact(selectedContactDetails);
+                    }
+                  }}
+                  onDelete={() => {
+                    setDeletingContact(selectedContact);
+                  }}
+                />
+              </div>
             </div>
-          </div>
-          {/* Panel Content */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {selectedContact && (
-              <SidePanel
-                contact={selectedContact}
-                contactDetails={selectedContactDetails}
-                isLoading={isDetailsLoading}
-                activeTab={sidePanelTab}
-                onTabChange={setSidePanelTab}
-                onClose={() => {
-                  setSelectedContact(null);
-                  setSelectedContactDetails(null);
-                }}
-                onEdit={() => {
-                  if (selectedContactDetails) {
-                    setEditingContact(selectedContactDetails);
-                  }
-                }}
-                onDelete={() => {
-                  setDeletingContact(selectedContact);
-                }}
-              />
-            )}
-          </div>
+          )}
         </div>
       </div>
 
