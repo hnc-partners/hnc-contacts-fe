@@ -65,13 +65,13 @@ export function FilterDropdown({ label, value, options, onChange }: FilterDropdo
         onClick={() => setOpen(!open)}
         className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-sm transition-colors ${
           hasValue
-            ? 'bg-teal-50 dark:bg-teal-900/20 text-foreground'
+            ? 'bg-brand/5 dark:bg-brand/20 text-foreground'
             : 'bg-muted text-muted-foreground hover:text-foreground'
         }`}
       >
         <span className="text-muted-foreground">{label}</span>
         {hasValue && (
-          <span className="font-medium text-teal-700 dark:text-teal-300">
+          <span className="font-medium text-brand">
             {selectedOption?.label}
           </span>
         )}
@@ -97,8 +97,8 @@ export function FilterDropdown({ label, value, options, onChange }: FilterDropdo
               onClick={() => { onChange(option.value); setOpen(false); }}
               className={`w-full text-left justify-start px-3 py-2 rounded-lg text-sm transition-colors ${
                 value === option.value
-                  ? 'text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/20 font-medium'
-                  : 'text-foreground hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-700 dark:hover:text-teal-300'
+                  ? 'text-brand bg-brand/5 dark:bg-brand/20 font-medium'
+                  : 'text-foreground hover:bg-brand/5 dark:hover:bg-brand/20 hover:text-brand'
               }`}
             >
               {option.label}

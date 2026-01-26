@@ -353,7 +353,7 @@ export function RoleForm({
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
                   Short Name
-                  <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-teal-400" title="Required" />
+                  <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-brand" title="Required" />
                 </label>
                 <input
                   type="text"
@@ -425,7 +425,7 @@ export function RoleForm({
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
                   Short Name
-                  <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-teal-400" title="Required" />
+                  <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-brand" title="Required" />
                 </label>
                 <input
                   type="text"
@@ -489,7 +489,7 @@ export function RoleForm({
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
                   Full Name
-                  <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-teal-400" title="Required" />
+                  <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-brand" title="Required" />
                 </label>
                 <input
                   type="text"
@@ -510,7 +510,7 @@ export function RoleForm({
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
                   Member Code
-                  <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-teal-400" title="Required" />
+                  <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-brand" title="Required" />
                 </label>
                 <input
                   type="text"
@@ -532,7 +532,7 @@ export function RoleForm({
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
                   Member Type
-                  <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-teal-400" title="Required" />
+                  <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-brand" title="Required" />
                 </label>
                 <Controller
                   control={control}
@@ -559,7 +559,7 @@ export function RoleForm({
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">
                     Joined Date
-                    <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-teal-400" title="Required" />
+                    <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-brand" title="Required" />
                   </label>
                   <input
                     type="date"

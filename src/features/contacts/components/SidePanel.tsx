@@ -269,11 +269,11 @@ export function SidePanel({
       {/* Header with contact name and close button */}
       <div className="flex items-center justify-between px-4 py-4 bg-muted/50 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-teal-100 dark:bg-teal-900/30">
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-brand/10 dark:bg-brand/20">
             {contact.contactType === 'person' ? (
-              <User className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+              <User className="h-4 w-4 text-brand" />
             ) : (
-              <Building2 className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+              <Building2 className="h-4 w-4 text-brand" />
             )}
           </div>
           <h3 className="text-lg font-semibold text-foreground">
@@ -299,7 +299,7 @@ export function SidePanel({
             onClick={() => onTabChange(tab.id)}
             className={`flex-1 px-2 py-2.5 text-xs font-medium whitespace-nowrap transition-colors rounded-none h-auto ${
               activeTab === tab.id
-                ? 'text-foreground border-b-2 border-teal-400'
+                ? 'text-foreground border-b-2 border-brand'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -435,7 +435,7 @@ export function SidePanel({
                       variant="outline"
                       size="sm"
                       onClick={() => setIsAddRoleModalOpen(true)}
-                      className="h-6 px-2 py-0.5 text-xs rounded-full border-dashed border-teal-400 text-teal-500 hover:bg-teal-400/10"
+                      className="h-6 px-2 py-0.5 text-xs rounded-full border-dashed border-brand text-brand hover:bg-brand/10"
                     >
                       <Plus className="h-3 w-3" />
                       Add
