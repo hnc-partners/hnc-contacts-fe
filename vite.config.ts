@@ -25,6 +25,8 @@ export default defineConfig({
         react: { singleton: true, requiredVersion: '^19.0.0' },
         'react-dom': { singleton: true, requiredVersion: '^19.0.0' },
         '@tanstack/react-query': { singleton: true, requiredVersion: '^5.62.0' },
+        '@tanstack/react-router': { singleton: true, requiredVersion: '1.120.20' },
+        '@hnc-partners/auth-context': { singleton: true, requiredVersion: '^0.1.0' },
       },
     }),
   ],

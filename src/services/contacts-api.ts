@@ -2,6 +2,7 @@
  * Contacts API Service
  *
  * Provides typed access to the Contacts microservice API.
+ * Uses JWT Bearer token authentication via shared auth-context.
  */
 
 import type {
@@ -24,15 +25,13 @@ import type {
   UpdateHncMemberDto,
   GamingAccount,
 } from '../types/contacts';
+import { getAuthItem } from '@hnc-partners/auth-context';
 
 // In development, use /api proxy to avoid CORS issues
 // In production, use the direct API URL
 const API_URL = import.meta.env.DEV
   ? '/api'
   : (import.meta.env.VITE_API_URL || 'https://hncms-contacts.scarif-0.duckdns.org');
-
-// API Key for Contacts service authentication
-const API_KEY = import.meta.env.VITE_API_KEY || 'dev-api-key-change-in-production';
 
 /**
  * API Error class
@@ -57,8 +56,11 @@ async function apiFetch<T>(
 ): Promise<T> {
   const headers = new Headers(options.headers);
 
-  // Add API key for authentication
-  headers.set('x-api-key', API_KEY);
+  // Add JWT Bearer token for authentication
+  const token = getAuthItem('access_token', 'hnc_');
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
 
   if (!headers.has('Content-Type') && options.body) {
     headers.set('Content-Type', 'application/json');
@@ -267,7 +269,12 @@ async function gamingAccountsFetch<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const headers = new Headers(options.headers);
-  headers.set('x-api-key', API_KEY);
+
+  // Add JWT Bearer token for authentication
+  const token = getAuthItem('access_token', 'hnc_');
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
 
   if (!headers.has('Content-Type') && options.body) {
     headers.set('Content-Type', 'application/json');
