@@ -3,15 +3,19 @@ import react from '@vitejs/plugin-react';
 import { federation } from '@module-federation/vite';
 import { resolve } from 'path';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 // https://vite.dev/config/
 export default defineConfig({
   // Production base URL for MF chunk resolution
-  base: process.env.NODE_ENV === 'production'
+  base: isProduction
     ? 'https://hncms-contacts-fe.scarif-0.duckdns.org/'
     : '/',
   plugins: [
     react(),
-    federation({
+    // Only enable Module Federation for production builds
+    // In dev mode, run as standalone app (faster, simpler)
+    ...(isProduction ? [federation({
       name: 'contacts',
       filename: 'remoteEntry.js',
       exposes: {
@@ -26,7 +30,7 @@ export default defineConfig({
         '@tanstack/react-query': { singleton: true, requiredVersion: '^5.62.0' },
         '@hnc-partners/auth-context': { singleton: true, requiredVersion: '^0.1.0' },
       },
-    }),
+    })] : []),
   ],
   resolve: {
     alias: {
@@ -34,21 +38,26 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5176,
+    port: 5175,
     host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3003',
+        target: 'https://hncms-contacts.scarif-0.duckdns.org',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
+        secure: true,
+        // Inject dev API key for local development
+        headers: {
+          'x-api-key': 'dev-api-key-change-in-production',
+        },
       },
     },
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: !isProduction, // Sourcemaps only in dev
     target: 'esnext',
-    minify: false,
+    minify: isProduction,     // Minify in production (esbuild)
     cssCodeSplit: false,
   },
 });
