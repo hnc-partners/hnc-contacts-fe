@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
 import { federation } from '@module-federation/vite';
 import { resolve } from 'path';
 
@@ -11,7 +10,6 @@ export default defineConfig({
     ? 'https://hncms-contacts-fe.scarif-0.duckdns.org/'
     : '/',
   plugins: [
-    TanStackRouterVite(),
     react(),
     federation({
       name: 'contacts',
@@ -24,8 +22,8 @@ export default defineConfig({
       shared: {
         react: { singleton: true, requiredVersion: '^19.0.0' },
         'react-dom': { singleton: true, requiredVersion: '^19.0.0' },
+        // NOTE: @tanstack/react-router removed - ContactsPage uses shell's router
         '@tanstack/react-query': { singleton: true, requiredVersion: '^5.62.0' },
-        '@tanstack/react-router': { singleton: true, requiredVersion: '^1.93.0' },
         '@hnc-partners/auth-context': { singleton: true, requiredVersion: '^0.1.0' },
       },
     }),

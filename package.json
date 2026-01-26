@@ -29,7 +29,6 @@
   },
   "devDependencies": {
     "@module-federation/vite": "^1.1.9",
-    "@tanstack/router-plugin": "^1.157.15",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^4.3.4",
