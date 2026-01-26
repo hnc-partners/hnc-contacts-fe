@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@hnc-partners/auth-context": "^0.1.1",
-    "@hnc-partners/ui-components": "link:/workspace/hnc-microservices/packages/ui-components",
+    "@hnc-partners/ui-components": "^0.1.0",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@tanstack/react-query": "^5.62.16",
