@@ -106,7 +106,7 @@ export function ContactsPage() {
       filterStatus === 'active' ? true : filterStatus === 'inactive' ? false : undefined,
     contactType: filterType || undefined,
     search: searchQuery || undefined,
-    limit: 500,
+    limit: 100,
     ...joinDateRange,
   });
 

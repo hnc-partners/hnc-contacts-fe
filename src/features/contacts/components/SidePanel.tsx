@@ -4,10 +4,10 @@
  * Contact detail side panel with tabs for details, gaming accounts, deals, status, notes.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Button } from '@hnc-partners/ui-components';
+import { Button, FormModal } from '@hnc-partners/ui-components';
 import {
   Loader2,
   X,
@@ -19,9 +19,10 @@ import {
   Gamepad2,
   AlertCircle,
 } from 'lucide-react';
-import { Modal, ConfirmModal } from '@/components/Modal';
+import { ConfirmModal } from '@/components/Modal';
 import { RoleBadge } from '@/components/RoleBadge';
 import { RoleForm } from '@/components/RoleForm';
+import type { RoleFormHandle } from '@/components/RoleForm';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { contactsApi } from '@/services/contacts-api';
 import { StatusBadge } from './StatusBadge';
@@ -144,6 +145,8 @@ export function SidePanel({
 
   // Role modals state
   const [isAddRoleModalOpen, setIsAddRoleModalOpen] = useState(false);
+  const addRoleFormRef = useRef<RoleFormHandle>(null);
+  const editRoleFormRef = useRef<RoleFormHandle>(null);
   const [editingRole, setEditingRole] = useState<{
     type: RoleType;
     role: Player | Partner | HncMember;
@@ -515,41 +518,49 @@ export function SidePanel({
                 )}
 
                 {/* Role Modals */}
-                <Modal
-                  isOpen={isAddRoleModalOpen}
-                  onClose={() => setIsAddRoleModalOpen(false)}
+                <FormModal
                   title="Add Role"
-                  accentColor="teal"
+                  open={isAddRoleModalOpen}
+                  onOpenChange={(open) => { if (!open) setIsAddRoleModalOpen(false); }}
+                  onSubmit={() => addRoleFormRef.current?.requestSubmit()}
+                  submitLabel="Add Role"
+                  cancelLabel="Cancel"
+                  loading={isAddingRole}
+                  size="md"
                 >
                   <RoleForm
+                    ref={addRoleFormRef}
                     contactId={contact.id}
                     contactName={contact.displayName}
                     existingRoleTypes={existingRoleTypes}
                     onSubmit={handleAddRole}
-                    onCancel={() => setIsAddRoleModalOpen(false)}
                     isLoading={isAddingRole}
                   />
-                </Modal>
+                </FormModal>
 
-                <Modal
-                  isOpen={!!editingRole}
-                  onClose={() => setEditingRole(null)}
+                <FormModal
                   title="Edit Role"
-                  accentColor="teal"
+                  open={!!editingRole}
+                  onOpenChange={(open) => { if (!open) setEditingRole(null); }}
+                  onSubmit={() => editRoleFormRef.current?.requestSubmit()}
+                  submitLabel="Update Role"
+                  cancelLabel="Cancel"
+                  loading={isUpdatingRole}
+                  size="md"
                 >
                   {editingRole && (
                     <RoleForm
+                      ref={editRoleFormRef}
                       contactId={contact.id}
                       existingRoleTypes={existingRoleTypes}
                       isEditMode={true}
                       editRoleType={editingRole.type}
                       editRole={editingRole.role}
                       onSubmit={handleUpdateRole}
-                      onCancel={() => setEditingRole(null)}
                       isLoading={isUpdatingRole}
                     />
                   )}
-                </Modal>
+                </FormModal>
 
                 <ConfirmModal
                   isOpen={!!removingRole}

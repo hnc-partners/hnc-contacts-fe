@@ -1,11 +1,14 @@
 /**
  * ContactFormModal Component
  *
- * Modal wrapper for ContactForm, handles both create and edit modes.
+ * Modal wrapper for ContactForm using FormModal from ui-components.
+ * Handles both create and edit modes.
  */
 
-import { Modal } from '@/components/Modal';
+import { useRef } from 'react';
+import { FormModal } from '@hnc-partners/ui-components';
 import { ContactForm } from '@/components/ContactForm';
+import type { ContactFormHandle } from '@/components/ContactForm';
 import type { ContactWithDetails, CreateContactDto, UpdateContactDto } from '../../types';
 
 interface ContactFormModalProps {
@@ -25,25 +28,39 @@ export function ContactFormModal({
   onClose,
   onSubmit,
 }: ContactFormModalProps) {
+  const formRef = useRef<ContactFormHandle>(null);
   const title = mode === 'create' ? 'Create Contact' : 'Edit Contact';
+  const submitLabel = mode === 'create' ? 'Create Contact' : 'Update Contact';
+
+  const handleFormModalSubmit = () => {
+    // Trigger react-hook-form validation and submit via the ref
+    formRef.current?.requestSubmit();
+  };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} accentColor="teal">
+    <FormModal
+      title={title}
+      open={isOpen}
+      onOpenChange={(open) => { if (!open) onClose(); }}
+      onSubmit={handleFormModalSubmit}
+      submitLabel={submitLabel}
+      cancelLabel="Cancel"
+      loading={isSubmitting}
+      size="lg"
+    >
       {mode === 'edit' && contact ? (
         <ContactForm
+          ref={formRef}
           onSubmit={onSubmit}
-          onCancel={onClose}
-          isSubmitting={isSubmitting}
           contact={contact}
           isEditMode={true}
         />
       ) : (
         <ContactForm
+          ref={formRef}
           onSubmit={onSubmit}
-          onCancel={onClose}
-          isSubmitting={isSubmitting}
         />
       )}
-    </Modal>
+    </FormModal>
   );
 }

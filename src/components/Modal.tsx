@@ -9,6 +9,8 @@ interface ModalProps {
   children: React.ReactNode;
   /** Optional accent color for the header bar */
   accentColor?: 'cyan' | 'amber' | 'emerald' | 'red' | 'violet' | 'neutral' | 'teal';
+  /** Modal width size */
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 }
 
 /**
@@ -20,7 +22,15 @@ interface ModalProps {
  * - Focus trap
  * - Accent color bar at top
  */
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+const SIZE_CLASSES: Record<NonNullable<ModalProps['size']>, string> = {
+  xs: 'max-w-[360px]',
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-xl',
+};
+
+export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Handle escape key
@@ -58,7 +68,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="relative w-full max-w-md mx-4 bg-card rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        className={`relative w-full ${SIZE_CLASSES[size]} mx-4 bg-card rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
@@ -119,6 +129,7 @@ export function ConfirmModal({
       onClose={onClose}
       title={title}
       accentColor={variant === 'danger' ? 'red' : 'amber'}
+      size="xs"
     >
       <p className="text-sm text-muted-foreground mb-4">{message}</p>
 
