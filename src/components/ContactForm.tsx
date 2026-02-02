@@ -137,10 +137,11 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
       watch,
       reset,
       control,
-      formState: { errors },
+      formState: { errors, touchedFields },
     } = useForm<ContactFormData>({
       resolver: zodResolver(contactFormSchema),
       defaultValues: getDefaultValues(),
+      mode: 'onBlur',
     });
 
     // Watch contactType to conditionally render fields
@@ -269,13 +270,13 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <input
                 type="text"
                 {...register('firstName')}
-                className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
-                  errors.firstName ? 'border-red-500' : 'border-input'
+                className={`w-full py-2 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
+                  errors.firstName ? 'border-destructive' : 'border-input'
                 }`}
                 placeholder="Enter first name"
               />
-              {errors.firstName && (
-                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+              {touchedFields.firstName && errors.firstName && (
+                <p className="mt-1 text-sm text-destructive flex items-center gap-1">
                   <AlertCircle className="h-3.5 w-3.5" />
                   {errors.firstName.message}
                 </p>
@@ -290,7 +291,7 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <input
                 type="text"
                 {...register('lastName')}
-                className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full py-2 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Enter last name"
               />
             </div>
@@ -303,13 +304,13 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <input
                 type="email"
                 {...register('email')}
-                className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
-                  errors.email ? 'border-red-500' : 'border-input'
+                className={`w-full py-2 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
+                  errors.email ? 'border-destructive' : 'border-input'
                 }`}
                 placeholder="Enter email address"
               />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+              {touchedFields.email && errors.email && (
+                <p className="mt-1 text-sm text-destructive flex items-center gap-1">
                   <AlertCircle className="h-3.5 w-3.5" />
                   {errors.email.message}
                 </p>
@@ -324,7 +325,7 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <input
                 type="tel"
                 {...register('mobileNumber')}
-                className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full py-2 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Enter mobile number"
               />
             </div>
@@ -337,7 +338,7 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <input
                 type="text"
                 {...register('country')}
-                className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full py-2 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Enter country"
               />
             </div>
@@ -350,7 +351,7 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <input
                 type="date"
                 {...register('joinDate')}
-                className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full py-2 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>
@@ -365,13 +366,13 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <input
                 type="text"
                 {...register('legalName')}
-                className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
-                  errors.legalName ? 'border-red-500' : 'border-input'
+                className={`w-full py-2 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
+                  errors.legalName ? 'border-destructive' : 'border-input'
                 }`}
                 placeholder="Enter legal name"
               />
-              {errors.legalName && (
-                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+              {touchedFields.legalName && errors.legalName && (
+                <p className="mt-1 text-sm text-destructive flex items-center gap-1">
                   <AlertCircle className="h-3.5 w-3.5" />
                   {errors.legalName.message}
                 </p>
@@ -386,7 +387,7 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <input
                 type="text"
                 {...register('taxId')}
-                className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full py-2 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Enter tax ID"
               />
             </div>
@@ -399,7 +400,7 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <input
                 type="text"
                 {...register('registrationNumber')}
-                className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full py-2 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Enter registration number"
               />
             </div>
@@ -412,7 +413,7 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <input
                 type="text"
                 {...register('country')}
-                className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full py-2 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Enter country"
               />
             </div>
@@ -425,7 +426,7 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <input
                 type="date"
                 {...register('joinDate')}
-                className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full py-2 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>

@@ -143,15 +143,15 @@ export interface ContactsListParams {
 // ===== STATUS COLORS =====
 
 export const STATUS_COLORS: Record<ContactStatus, { bg: string; text: string }> = {
-  active: { bg: 'bg-green-100 dark:bg-green-900', text: 'text-green-700 dark:text-green-300' },
-  inactive: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-300' },
+  active: { bg: 'bg-success/15', text: 'text-success' },
+  inactive: { bg: 'bg-muted', text: 'text-muted-foreground' },
 };
 
 // ===== TYPE COLORS =====
 
 export const TYPE_COLORS: Record<ContactType, { bg: string; text: string }> = {
-  person: { bg: 'bg-blue-100 dark:bg-blue-900', text: 'text-blue-700 dark:text-blue-300' },
-  organization: { bg: 'bg-purple-100 dark:bg-purple-900', text: 'text-purple-700 dark:text-purple-300' },
+  person: { bg: 'bg-info/15', text: 'text-info' },
+  organization: { bg: 'bg-info/15', text: 'text-info' },
 };
 
 // ===== ROLE TYPES =====

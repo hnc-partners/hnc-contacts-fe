@@ -7,10 +7,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Button, FormModal } from '@hnc-partners/ui-components';
+import { Button, ConfirmDialog, FormModal, SidePanelShell } from '@hnc-partners/ui-components';
+import type { SidePanelShellTab } from '@hnc-partners/ui-components';
 import {
   Loader2,
-  X,
   User,
   Building2,
   Pencil,
@@ -19,12 +19,12 @@ import {
   Gamepad2,
   AlertCircle,
 } from 'lucide-react';
-import { ConfirmModal } from '@/components/Modal';
+
 import { RoleBadge } from '@/components/RoleBadge';
 import { RoleForm } from '@/components/RoleForm';
 import type { RoleFormHandle } from '@/components/RoleForm';
-import { CustomSelect } from '@/components/ui/custom-select';
-import { contactsApi } from '@/services/contacts-api';
+import { CustomSelect } from '@hnc-partners/ui-components';
+import { contactsApi } from '../api/contacts-api';
 import { StatusBadge } from './StatusBadge';
 import { DetailRow } from './DetailRow';
 import {
@@ -66,19 +66,19 @@ interface SidePanelProps {
 const STATUS_CONFIG: Record<GamingAccountStatus, { label: string; className: string }> = {
   active: {
     label: 'Active',
-    className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    className: 'bg-success/15 text-success dark:bg-success/20',
   },
   untagged: {
     label: 'Untagged',
-    className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    className: 'bg-warning/15 text-warning dark:bg-warning/20',
   },
   dormant: {
     label: 'Dormant',
-    className: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400',
+    className: 'bg-muted text-muted-foreground',
   },
   closed: {
     label: 'Closed',
-    className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    className: 'bg-destructive/15 text-destructive dark:bg-destructive/20',
   },
 };
 
@@ -102,8 +102,8 @@ function GamingAccountCard({ account }: GamingAccountCardProps) {
     <div className="p-3 rounded-lg border border-border bg-card hover:bg-muted/30 transition-colors">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="flex-shrink-0 w-8 h-8 rounded-md bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-            <Gamepad2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+          <div className="flex-shrink-0 w-8 h-8 rounded-md bg-info/15 dark:bg-info/20 flex items-center justify-center">
+            <Gamepad2 className="h-4 w-4 text-info" />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
@@ -259,7 +259,7 @@ export function SidePanel({
     setRemovingRole(null);
   };
 
-  const tabs: { id: SidePanelTab; label: string }[] = [
+  const tabs: SidePanelShellTab[] = [
     { id: 'details', label: 'Details' },
     { id: 'gaming-accounts', label: 'Gaming Accounts' },
     { id: 'deals', label: 'Deals' },
@@ -267,52 +267,36 @@ export function SidePanel({
     { id: 'notes', label: 'Notes' },
   ];
 
+  const HeaderIcon = contact.contactType === 'person' ? User : Building2;
+
   return (
-    <div className="h-full bg-background border-l border-border flex flex-col">
-      {/* Header with contact name and close button */}
-      <div className="flex items-center justify-between px-4 py-4 bg-muted/50 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-mf-accent/10 dark:bg-mf-accent/20">
-            {contact.contactType === 'person' ? (
-              <User className="h-4 w-4 text-mf-accent" />
-            ) : (
-              <Building2 className="h-4 w-4 text-mf-accent" />
-            )}
+    <SidePanelShell
+      icon={HeaderIcon}
+      title={contact.displayName}
+      onClose={onClose}
+      tabs={tabs}
+      activeTab={activeTab}
+      onTabChange={(tabId) => onTabChange(tabId as SidePanelTab)}
+      footer={
+        activeTab === 'details' ? (
+          <div className="border-t border-border p-4 flex gap-2">
+            <Button size="sm" onClick={onEdit} className="flex-1">
+              <Pencil className="h-4 w-4" />
+              Edit
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onDelete}
+              className="flex-1 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 dark:hover:bg-destructive/20 dark:hover:text-destructive dark:hover:border-destructive/30"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </Button>
           </div>
-          <h3 className="text-lg font-semibold text-foreground">
-            {contact.displayName}
-          </h3>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="h-8 w-8"
-        >
-          <X className="h-5 w-5" />
-        </Button>
-      </div>
-
-      {/* Tab Bar */}
-      <div className="flex border-b border-border">
-        {tabs.map((tab) => (
-          <Button
-            key={tab.id}
-            variant="ghost"
-            onClick={() => onTabChange(tab.id)}
-            className={`flex-1 px-2 py-2.5 text-xs font-medium whitespace-nowrap transition-colors rounded-none h-auto ${
-              activeTab === tab.id
-                ? 'text-foreground border-b-2 border-mf-accent'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {tab.label}
-          </Button>
-        ))}
-      </div>
-
-      {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto">
+        ) : undefined
+      }
+    >
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -356,7 +340,7 @@ export function SidePanel({
                                 onClick={() =>
                                   setRemovingRole({ type: 'player', role: p })
                                 }
-                                className="h-5 w-5 p-0.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                className="h-5 w-5 p-0.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20"
                                 title="Remove player role"
                               >
                                 <Trash2 className="h-3 w-3" />
@@ -388,7 +372,7 @@ export function SidePanel({
                                 onClick={() =>
                                   setRemovingRole({ type: 'partner', role: p })
                                 }
-                                className="h-5 w-5 p-0.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                className="h-5 w-5 p-0.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20"
                                 title="Remove partner role"
                               >
                                 <Trash2 className="h-3 w-3" />
@@ -420,7 +404,7 @@ export function SidePanel({
                                 onClick={() =>
                                   setRemovingRole({ type: 'hnc_member', role: m })
                                 }
-                                className="h-5 w-5 p-0.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                className="h-5 w-5 p-0.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20"
                                 title="Remove HNC member role"
                               >
                                 <Trash2 className="h-3 w-3" />
@@ -562,7 +546,7 @@ export function SidePanel({
                   )}
                 </FormModal>
 
-                <ConfirmModal
+                <ConfirmDialog
                   isOpen={!!removingRole}
                   onClose={() => setRemovingRole(null)}
                   onConfirm={handleRemoveRole}
@@ -603,10 +587,10 @@ export function SidePanel({
                     <p className="text-xs text-muted-foreground max-w-[200px] mx-auto">
                       Gaming accounts are linked through deals. This feature requires backend integration.
                     </p>
-                    <div className="mt-4 p-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                    <div className="mt-4 p-3 rounded-md bg-warning/10 dark:bg-warning/15 border border-warning/30">
                       <div className="flex items-start gap-2">
-                        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-amber-700 dark:text-amber-300 text-left">
+                        <AlertCircle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-warning text-left">
                           The gaming-accounts service does not yet support filtering by contact. This will be available after the Deals service rebuild (PLAN-011).
                         </p>
                       </div>
@@ -731,30 +715,6 @@ export function SidePanel({
             )}
           </>
         )}
-      </div>
-
-      {/* Footer with Edit and Delete buttons - only on Details tab */}
-      {activeTab === 'details' && (
-        <div className="border-t border-border p-4 flex gap-2">
-          <Button
-            size="sm"
-            onClick={onEdit}
-            className="flex-1"
-          >
-            <Pencil className="h-4 w-4" />
-            Edit
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onDelete}
-            className="flex-1 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-900/20 dark:hover:text-red-400 dark:hover:border-red-800"
-          >
-            <Trash2 className="h-4 w-4" />
-            Delete
-          </Button>
-        </div>
-      )}
-    </div>
+    </SidePanelShell>
   );
 }

@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AlertCircle, Gamepad2, Handshake, Users } from 'lucide-react';
 import { Button } from '@hnc-partners/ui-components';
-import { CustomSelect } from '@/components/ui/custom-select';
+import { CustomSelect } from '@hnc-partners/ui-components';
 import type {
   RoleType,
   Player,
@@ -357,8 +357,8 @@ export const RoleForm = forwardRef<RoleFormHandle, RoleFormProps>(
         />
 
         {allRolesAssigned && (
-          <div className="rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
-            <p className="text-sm text-amber-700 dark:text-amber-400">
+          <div className="rounded-md bg-warning/10 dark:bg-warning/15 border border-warning/30 dark:border-warning/30 p-3">
+            <p className="text-sm text-warning">
               This contact already has all available role types assigned.
             </p>
           </div>
@@ -377,12 +377,12 @@ export const RoleForm = forwardRef<RoleFormHandle, RoleFormProps>(
                     type="text"
                     {...register('shortName')}
                     className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
-                      errors.shortName ? 'border-red-500' : 'border-input'
+                      errors.shortName ? 'border-destructive' : 'border-input'
                     }`}
                     placeholder="Enter short name"
                   />
                   {errors.shortName && (
-                    <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                    <p className="mt-1 text-sm text-destructive flex items-center gap-1">
                       <AlertCircle className="h-3.5 w-3.5" />
                       {errors.shortName.message}
                     </p>
@@ -449,12 +449,12 @@ export const RoleForm = forwardRef<RoleFormHandle, RoleFormProps>(
                     type="text"
                     {...register('shortName')}
                     className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
-                      errors.shortName ? 'border-red-500' : 'border-input'
+                      errors.shortName ? 'border-destructive' : 'border-input'
                     }`}
                     placeholder="Enter short name"
                   />
                   {errors.shortName && (
-                    <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                    <p className="mt-1 text-sm text-destructive flex items-center gap-1">
                       <AlertCircle className="h-3.5 w-3.5" />
                       {errors.shortName.message}
                     </p>
@@ -513,12 +513,12 @@ export const RoleForm = forwardRef<RoleFormHandle, RoleFormProps>(
                     type="text"
                     {...register('fullName')}
                     className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
-                      errors.fullName ? 'border-red-500' : 'border-input'
+                      errors.fullName ? 'border-destructive' : 'border-input'
                     }`}
                     placeholder="Enter full name"
                   />
                   {errors.fullName && (
-                    <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                    <p className="mt-1 text-sm text-destructive flex items-center gap-1">
                       <AlertCircle className="h-3.5 w-3.5" />
                       {errors.fullName.message}
                     </p>
@@ -534,13 +534,13 @@ export const RoleForm = forwardRef<RoleFormHandle, RoleFormProps>(
                     type="text"
                     {...register('memberCode')}
                     className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
-                      errors.memberCode ? 'border-red-500' : 'border-input'
+                      errors.memberCode ? 'border-destructive' : 'border-input'
                     }`}
                     placeholder="e.g., JD01"
                     disabled={isEditMode}
                   />
                   {errors.memberCode && (
-                    <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                    <p className="mt-1 text-sm text-destructive flex items-center gap-1">
                       <AlertCircle className="h-3.5 w-3.5" />
                       {errors.memberCode.message}
                     </p>
@@ -566,7 +566,7 @@ export const RoleForm = forwardRef<RoleFormHandle, RoleFormProps>(
                     )}
                   />
                   {errors.memberType && (
-                    <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                    <p className="mt-1 text-sm text-destructive flex items-center gap-1">
                       <AlertCircle className="h-3.5 w-3.5" />
                       {errors.memberType.message}
                     </p>
@@ -583,11 +583,11 @@ export const RoleForm = forwardRef<RoleFormHandle, RoleFormProps>(
                       type="date"
                       {...register('joinedDate')}
                       className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
-                        errors.joinedDate ? 'border-red-500' : 'border-input'
+                        errors.joinedDate ? 'border-destructive' : 'border-input'
                       }`}
                     />
                     {errors.joinedDate && (
-                      <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                      <p className="mt-1 text-sm text-destructive flex items-center gap-1">
                         <AlertCircle className="h-3.5 w-3.5" />
                         {errors.joinedDate.message}
                       </p>

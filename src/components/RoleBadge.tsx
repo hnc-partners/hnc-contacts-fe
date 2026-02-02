@@ -15,20 +15,20 @@ const ROLE_CONFIG: Record<RoleType, {
   player: {
     label: 'Player',
     icon: Gamepad2,
-    bg: 'bg-blue-100 dark:bg-blue-900/50',
-    text: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-info/15 dark:bg-info/20',
+    text: 'text-info',
   },
   partner: {
     label: 'Partner',
     icon: Handshake,
-    bg: 'bg-green-100 dark:bg-green-900/50',
-    text: 'text-green-600 dark:text-green-400',
+    bg: 'bg-success/15 dark:bg-success/20',
+    text: 'text-success',
   },
   hnc_member: {
     label: 'HNC Member',
     icon: Briefcase,
-    bg: 'bg-amber-100 dark:bg-amber-900/50',
-    text: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-warning/15 dark:bg-warning/20',
+    text: 'text-warning',
   },
 };
 

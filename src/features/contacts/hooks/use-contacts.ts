@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { contactsApi, rolesApi, gamingAccountsApi } from '@/services/contacts-api';
+import { contactsApi, rolesApi, gamingAccountsApi } from '../api/contacts-api';
 import type {
   Contact,
   ContactsListParams,

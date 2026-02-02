@@ -5,35 +5,35 @@
  * Handles list view, side panel, modals, and all UI state.
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Button } from '@hnc-partners/ui-components';
+import {
+  Button,
+  DataTable,
+  FilterDropdown,
+  EmptyState,
+  ErrorState,
+  PageToolbar,
+  useResizeObserver,
+  useResponsiveColumns,
+  useKeyboardNavigation,
+  usePanelResize,
+  PANEL_DEFAULTS,
+  type SortingState,
+  type ColumnBreakpoint,
+} from '@hnc-partners/ui-components';
 // Note: No Layout import - shell provides the layout when used as MF
-import { FilterDropdown } from '@/components/FilterDropdown';
-import { CustomSelect } from '@/components/ui/custom-select';
-import { contactsApi } from '@/services/contacts-api';
-import { formatDate, getJoinDateRange } from '@/lib/utils';
+import { contactsApi } from '../api/contacts-api';
+import { getJoinDateRange } from '@/lib/utils';
 import {
   Loader2,
   Users,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  ChevronDown,
-  SlidersHorizontal,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  GripVertical,
   Home,
   Plus,
-  X,
 } from 'lucide-react';
 
-import { ActionsDropdown } from './ActionsDropdown';
+import { createColumns } from './columns';
 import { SidePanel } from './SidePanel';
 import { DeleteContactModal } from './DeleteContactModal';
 import { ContactFormModal } from './forms/ContactFormModal';
@@ -60,8 +60,16 @@ import {
   STATUS_OPTIONS,
   TYPE_OPTIONS,
   JOIN_DATE_OPTIONS,
-  ROWS_PER_PAGE_OPTIONS,
 } from '../types';
+
+// Responsive column breakpoints for contacts table
+const CONTACTS_COLUMN_BREAKPOINTS: ColumnBreakpoint[] = [
+  { maxWidth: 700, columns: ['balance'] },
+  { maxWidth: 600, columns: ['joinDate'] },
+  { maxWidth: 500, columns: ['actions'] },
+  { maxWidth: 400, columns: ['lastName'] },
+  { maxWidth: 300, columns: ['firstName'] },
+];
 
 export function ContactsPage() {
   const queryClient = useQueryClient();
@@ -83,18 +91,21 @@ export function ContactsPage() {
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // Pagination State
-  const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [resetPageTrigger, setResetPageTrigger] = useState(0);
 
   // Sorting State
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   // Side panel width state for resizing
-  const [sidePanelWidth, setSidePanelWidth] = useState(420);
-  const isResizing = useRef(false);
+  const [sidePanelWidth, setSidePanelWidth] = useState<number>(PANEL_DEFAULTS.defaultWidth);
+  const { handleMouseDown } = usePanelResize({
+    setWidth: setSidePanelWidth,
+    minWidth: PANEL_DEFAULTS.minWidth,
+    maxWidth: PANEL_DEFAULTS.maxWidth,
+  });
 
-  // Content area ref for scroll-to-top on page change
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Compute join date range from filter value
@@ -145,22 +156,61 @@ export function ContactsPage() {
     }
   }, [contactDetails]);
 
-  // Scroll to top on page change
-  useEffect(() => {
-    contentRef.current?.scrollTo({ top: 0 });
-  }, [currentPage]);
+  // Track table container width for responsive column visibility
+  const containerWidth = useResizeObserver(contentRef);
+
+  // Responsive column visibility based on container width
+  const columnVisibility = useResponsiveColumns(containerWidth, CONTACTS_COLUMN_BREAKPOINTS);
+
+  // Memoized column definitions with callbacks
+  const tableColumns = useMemo(() => createColumns({
+    onView: (contact) => {
+      setSidePanelTab('details');
+      setSelectedContact(contact);
+      setSelectedContactDetails(null);
+    },
+    onEdit: (contact) => handleOpenEditModal(contact),
+    onCopy: async (contact) => {
+      try {
+        await navigator.clipboard.writeText(contact.displayName);
+        toast.success('Name copied to clipboard');
+      } catch {
+        const textarea = document.createElement('textarea');
+        textarea.value = contact.displayName;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        toast.success('Name copied to clipboard');
+      }
+    },
+    onDelete: (contact) => setDeletingContact(contact),
+    onToggleActive: async (contact) => {
+      try {
+        const newStatus = !contact.isActive;
+        await contactsApi.update(contact.id, { isActive: newStatus });
+        queryClient.invalidateQueries({ queryKey: contactsKeys.all });
+        queryClient.invalidateQueries({ queryKey: contactsKeys.detail(contact.id) });
+        toast.success(`Contact ${newStatus ? 'activated' : 'deactivated'} successfully`);
+      } catch (error) {
+        toast.error(`Failed to update contact status: ${(error as Error).message}`);
+      }
+    },
+    onGamingAccounts: (contact) => {
+      setSidePanelTab('gaming-accounts');
+      setSelectedContact(contact);
+      setSelectedContactDetails(null);
+    },
+    onDeals: (contact) => {
+      setSidePanelTab('deals');
+      setSelectedContact(contact);
+      setSelectedContactDetails(null);
+    },
+  }), []);  // Empty deps - callbacks use closures over state setters which are stable
 
   // Handlers
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-    setCurrentPage(1);
-  };
-
   const handleCreateContact = (data: CreateContactDto | UpdateContactDto) => {
     createContactMutation.mutate(data as CreateContactDto);
   };
@@ -198,7 +248,7 @@ export function ContactsPage() {
     setFilterStatus('');
     setFilterType('');
     setJoinDateFilter('');
-    setCurrentPage(1);
+    setResetPageTrigger(p => p + 1);
   };
 
   const hasActiveFilters = searchQuery || filterStatus || filterType || joinDateFilter;
@@ -214,224 +264,141 @@ export function ContactsPage() {
   // Client-side sorting
   const allContacts = [...filteredContacts].sort((a, b) => {
     if (!sortField) return 0;
-    let aValue: string | boolean = a[sortField] ?? '';
-    let bValue: string | boolean = b[sortField] ?? '';
-    if (typeof aValue === 'string') aValue = aValue.toLowerCase();
-    if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+    let aValue: string;
+    let bValue: string;
+
+    switch (sortField) {
+      case 'firstName':
+        aValue = (a.personDetails?.firstName ?? '').toLowerCase();
+        bValue = (b.personDetails?.firstName ?? '').toLowerCase();
+        break;
+      case 'lastName':
+        aValue = (a.personDetails?.lastName ?? '').toLowerCase();
+        bValue = (b.personDetails?.lastName ?? '').toLowerCase();
+        break;
+      case 'joinDate':
+        // Compare as ISO date strings (lexicographic works for ISO dates)
+        aValue = a.joinDate ?? '';
+        bValue = b.joinDate ?? '';
+        break;
+      case 'displayName':
+      default:
+        aValue = (a.displayName ?? '').toLowerCase();
+        bValue = (b.displayName ?? '').toLowerCase();
+        break;
+    }
+
     if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
     if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
     return 0;
   });
 
-  // Client-side pagination
-  const totalItems = allContacts.length;
-  const totalPages = Math.ceil(totalItems / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
-  const paginatedContacts = allContacts.slice(startIndex, endIndex);
-
   // Keyboard navigation
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && selectedContact) {
-        setSelectedContact(null);
-        setSelectedContactDetails(null);
-        return;
-      }
-
-      if (selectedContact && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-        e.preventDefault();
-        const currentIndex = paginatedContacts.findIndex(
-          (c) => c.id === selectedContact.id
-        );
-        if (currentIndex === -1) return;
-
-        let newIndex: number;
-        if (e.key === 'ArrowUp') {
-          newIndex =
-            currentIndex > 0 ? currentIndex - 1 : paginatedContacts.length - 1;
-        } else {
-          newIndex =
-            currentIndex < paginatedContacts.length - 1 ? currentIndex + 1 : 0;
-        }
-
-        setSelectedContact(paginatedContacts[newIndex]);
-        setSelectedContactDetails(null);
-      }
+  useKeyboardNavigation({
+    selectedItem: selectedContact,
+    items: allContacts,
+    onSelect: (contact) => {
+      setSelectedContact(contact);
+      setSelectedContactDetails(null);
     },
-    [selectedContact, paginatedContacts]
-  );
-
-  useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
-
-  // Resize handlers
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    isResizing.current = true;
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isResizing.current) return;
-    const newWidth = window.innerWidth - e.clientX;
-    setSidePanelWidth(Math.min(Math.max(newWidth, 300), 700));
-  };
-
-  const handleMouseUp = () => {
-    isResizing.current = false;
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-  };
+    onEscape: () => {
+      setSelectedContact(null);
+      setSelectedContactDetails(null);
+    },
+    getId: (c) => c.id,
+  });
 
   // Note: No Layout wrapper - shell provides the layout when used as MF
   return (
     <>
-      <div className="flex h-full w-full overflow-hidden">
-        {/* Main Content */}
-        <div
-          ref={contentRef}
-          className="flex-1 flex flex-col overflow-y-auto transition-all duration-300"
-        >
-          <div className="py-6 px-4 sm:px-6 lg:px-8">
-            {/* Header Row - Title and Add Button */}
-            <div className="flex items-center justify-between mb-2">
-              <h1 className="text-2xl font-semibold text-foreground">Contacts</h1>
-              <Button
-                size="sm"
-                onClick={() => setIsCreateModalOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Add Contact
-              </Button>
-            </div>
+      <div className="flex flex-col h-full w-full overflow-hidden">
+        {/* Page Header - OUTSIDE the flex row so panel aligns with filter bar */}
+        <div className="px-4 sm:px-6 lg:px-8 pt-6">
+          {/* Header Row - Title and Add Button */}
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-2xl font-semibold text-foreground">Contacts</h1>
+            <Button
+              size="sm"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Add Contact
+            </Button>
+          </div>
 
-            {/* Breadcrumb */}
-            <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-4">
-              <a
-                href="/"
-                className="flex items-center gap-1 hover:text-foreground transition-colors"
-              >
-                <Home className="h-4 w-4" />
-              </a>
-              <span>/</span>
-              <span className="text-foreground">Contacts</span>
-            </nav>
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-4">
+            <a
+              href="/"
+              className="flex items-center gap-1 hover:text-foreground transition-colors"
+            >
+              <Home className="h-4 w-4" />
+            </a>
+            <span>/</span>
+            <span className="text-foreground">Contacts</span>
+          </nav>
+        </div>
 
-            {/* Toolbar Row - Filters + Rows left, Search right */}
-            <div className="flex items-center justify-between gap-4 mb-3">
-              {/* Left side - Filters toggle, Rows select */}
-              <div className="flex items-center gap-3">
-                {/* Filters Toggle */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setFiltersExpanded(!filtersExpanded)}
-                  className={filtersExpanded || hasActiveFilters
-                    ? 'border-foreground/30 bg-accent text-foreground'
-                    : ''}
-                >
-                  <SlidersHorizontal className="h-4 w-4" />
-                  Filters
-                  {hasActiveFilters && (
-                    <span className="px-1.5 py-0.5 text-xs bg-mf-accent/80 text-white rounded-full">
-                      {(filterStatus ? 1 : 0) +
-                        (filterType ? 1 : 0) +
-                        (joinDateFilter ? 1 : 0)}
-                    </span>
-                  )}
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${
-                      filtersExpanded ? 'rotate-180' : ''
-                    }`}
-                  />
-                </Button>
-
-                {/* Rows per page */}
-                <div className="w-[80px]">
-                  <CustomSelect
-                    value={String(rowsPerPage)}
+        {/* Content Row - Filter/Table + Side Panel (panel aligns with filter bar) */}
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          {/* Main Content */}
+          <div
+            ref={contentRef}
+            className="flex-1 min-w-0 flex flex-col overflow-hidden transition-all duration-300"
+          >
+            <div className="px-4 sm:px-6 lg:px-8 pb-6 overflow-y-auto flex-1">
+            <PageToolbar
+              searchValue={searchQuery}
+              onSearchChange={(v) => {
+                setSearchQuery(v);
+                setResetPageTrigger(p => p + 1);
+              }}
+              filtersExpanded={filtersExpanded}
+              onToggleFilters={() => setFiltersExpanded(!filtersExpanded)}
+              activeFilterCount={
+                (filterStatus ? 1 : 0) +
+                (filterType ? 1 : 0) +
+                (joinDateFilter ? 1 : 0)
+              }
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(v) => {
+                setRowsPerPage(v);
+                setResetPageTrigger(p => p + 1);
+              }}
+              onClearFilters={clearFilters}
+              filters={
+                <>
+                  <FilterDropdown
+                    label="Type"
+                    value={filterType}
+                    options={TYPE_OPTIONS}
                     onChange={(v) => {
-                      setRowsPerPage(Number(v));
-                      setCurrentPage(1);
+                      setFilterType(v as ContactType | '');
+                      setResetPageTrigger(p => p + 1);
                     }}
-                    options={ROWS_PER_PAGE_OPTIONS.map((n) => ({
-                      value: String(n),
-                      label: String(n),
-                    }))}
                   />
-                </div>
-              </div>
-
-              {/* Search Box - Right side */}
-              <div className="relative w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="w-full h-9 pl-9 pr-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 placeholder:italic focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-            </div>
-
-            {/* Filters Row */}
-            {filtersExpanded && (
-              <div className="flex items-center gap-3 mb-3">
-                {/* Type Filter */}
-                <FilterDropdown
-                  label="Type"
-                  value={filterType}
-                  options={TYPE_OPTIONS}
-                  onChange={(v) => {
-                    setFilterType(v as ContactType | '');
-                    setCurrentPage(1);
-                  }}
-                />
-
-                {/* Status Filter */}
-                <FilterDropdown
-                  label="Status"
-                  value={filterStatus}
-                  options={STATUS_OPTIONS}
-                  onChange={(v) => {
-                    setFilterStatus(v as ContactStatus | '');
-                    setCurrentPage(1);
-                  }}
-                />
-
-                {/* Join Date Filter */}
-                <FilterDropdown
-                  label="Join Date"
-                  value={joinDateFilter}
-                  options={JOIN_DATE_OPTIONS}
-                  onChange={(v) => {
-                    setJoinDateFilter(v);
-                    setCurrentPage(1);
-                  }}
-                />
-
-                {/* Clear All Button */}
-                {hasActiveFilters && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearFilters}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    Clear all
-                  </Button>
-                )}
-              </div>
-            )}
+                  <FilterDropdown
+                    label="Status"
+                    value={filterStatus}
+                    options={STATUS_OPTIONS}
+                    onChange={(v) => {
+                      setFilterStatus(v as ContactStatus | '');
+                      setResetPageTrigger(p => p + 1);
+                    }}
+                  />
+                  <FilterDropdown
+                    label="Join Date"
+                    value={joinDateFilter}
+                    options={JOIN_DATE_OPTIONS}
+                    onChange={(v) => {
+                      setJoinDateFilter(v);
+                      setResetPageTrigger(p => p + 1);
+                    }}
+                  />
+                </>
+              }
+            />
 
             {/* Loading State */}
             {isLoading && (
@@ -442,324 +409,126 @@ export function ContactsPage() {
 
             {/* Error State */}
             {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
-                <p>Error loading contacts: {(error as Error).message}</p>
-              </div>
+              <ErrorState
+                message={`Error loading contacts: ${(error as Error).message}`}
+                onRetry={() => window.location.reload()}
+              />
             )}
 
             {/* Empty State */}
             {!isLoading && !error && allContacts.length === 0 && (
-              <div className="rounded-lg border bg-card p-12 text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                  <Users className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="mt-4 text-lg font-medium text-foreground">
-                  No contacts found
-                </h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {hasActiveFilters
+              <EmptyState
+                icon={Users}
+                title="No contacts found"
+                description={
+                  hasActiveFilters
                     ? 'No contacts match your search or filters. Try adjusting them.'
-                    : 'No contacts have been created yet.'}
-                </p>
-                {hasActiveFilters && (
-                  <Button
-                    variant="link"
-                    onClick={clearFilters}
-                    className="mt-4"
-                  >
-                    Clear filters
-                  </Button>
-                )}
-              </div>
+                    : 'Get started by creating your first contact.'
+                }
+                action={
+                  hasActiveFilters ? (
+                    <Button
+                      variant="link"
+                      onClick={clearFilters}
+                    >
+                      Clear filters
+                    </Button>
+                  ) : (
+                    <Button onClick={() => setIsCreateModalOpen(true)}>
+                      <Plus className="h-4 w-4" />
+                      Add Contact
+                    </Button>
+                  )
+                }
+              />
             )}
 
             {/* Contacts Table */}
             {!isLoading && !error && allContacts.length > 0 && (
-              <>
-                <div className="rounded-lg border border-border overflow-hidden">
-                  <table className="w-full divide-y divide-border table-fixed">
-                    <thead className="bg-muted/80 border-b border-border">
-                      <tr>
-                        <th className="w-[25%] px-4 py-2.5 text-left">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleSort('displayName')}
-                            className="h-auto p-0 inline-flex items-center gap-1 text-xs font-semibold text-foreground/70 uppercase tracking-wider hover:text-foreground hover:bg-transparent"
-                          >
-                            Name
-                            {sortField === 'displayName' ? (
-                              sortDirection === 'asc' ? (
-                                <ArrowUp className="h-3 w-3" />
-                              ) : (
-                                <ArrowDown className="h-3 w-3" />
-                              )
-                            ) : (
-                              <ArrowUpDown className="h-3 w-3 opacity-50" />
-                            )}
-                          </Button>
-                        </th>
-                        {!selectedContact && (
-                          <th className="w-[15%] px-4 py-2.5 text-left">
-                            <span className="text-xs font-semibold text-foreground/70 uppercase tracking-wider">
-                              First Name
-                            </span>
-                          </th>
-                        )}
-                        {!selectedContact && (
-                          <th className="w-[15%] px-4 py-2.5 text-left">
-                            <span className="text-xs font-semibold text-foreground/70 uppercase tracking-wider">
-                              Last Name
-                            </span>
-                          </th>
-                        )}
-                        <th className="w-[15%] px-4 py-2.5 text-left">
-                          <span className="text-xs font-semibold text-foreground/70 uppercase tracking-wider">
-                            Join Date
-                          </span>
-                        </th>
-                        <th className="w-[15%] px-4 py-2.5 text-right">
-                          <span className="text-xs font-semibold text-foreground/70 uppercase tracking-wider">
-                            Balance
-                          </span>
-                        </th>
-                        <th className="w-[15%] px-4 py-2.5 text-right">
-                          <span className="sr-only">Actions</span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {paginatedContacts.map((contact, index) => (
-                        <tr
-                          key={contact.id}
-                          data-index={index}
-                          onClick={() => {
-                            if (selectedContact?.id === contact.id) {
-                              setSelectedContact(null);
-                              setSelectedContactDetails(null);
-                            } else {
-                              setSidePanelTab('details');
-                              setSelectedContact(contact);
-                              setSelectedContactDetails(null);
-                            }
-                          }}
-                          className={`transition-colors hover:bg-muted/50 cursor-pointer ${
-                            selectedContact?.id === contact.id
-                              ? 'bg-accent'
-                              : 'bg-muted/30'
-                          }`}
-                        >
-                          <td className="px-4 py-2 whitespace-nowrap">
-                            <span className="text-sm font-medium text-foreground">
-                              {contact.displayName}
-                            </span>
-                          </td>
-                          {!selectedContact && (
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              <span className="text-sm text-muted-foreground">
-                                {contact.personDetails?.firstName || '\u2014'}
-                              </span>
-                            </td>
-                          )}
-                          {!selectedContact && (
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              <span className="text-sm text-muted-foreground">
-                                {contact.personDetails?.lastName || '\u2014'}
-                              </span>
-                            </td>
-                          )}
-                          <td className="px-4 py-2 whitespace-nowrap">
-                            <span className="text-sm text-muted-foreground">
-                              {formatDate(contact.joinDate) || '\u2014'}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2 whitespace-nowrap text-right">
-                            <span className="text-sm text-muted-foreground">
-                              {'\u2014'}
-                            </span>
-                          </td>
-                          <td
-                            className="px-4 py-2 whitespace-nowrap text-right"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <ActionsDropdown
-                              onView={() => {
-                                setSidePanelTab('details');
-                                setSelectedContact(contact);
-                                setSelectedContactDetails(null);
-                              }}
-                              onDelete={() => {
-                                setDeletingContact(contact);
-                              }}
-                              onCopy={async () => {
-                                try {
-                                  await navigator.clipboard.writeText(
-                                    contact.displayName
-                                  );
-                                  toast.success('Name copied to clipboard');
-                                } catch {
-                                  const textarea = document.createElement('textarea');
-                                  textarea.value = contact.displayName;
-                                  textarea.style.position = 'fixed';
-                                  textarea.style.opacity = '0';
-                                  document.body.appendChild(textarea);
-                                  textarea.select();
-                                  document.execCommand('copy');
-                                  document.body.removeChild(textarea);
-                                  toast.success('Name copied to clipboard');
-                                }
-                              }}
-                              onEdit={() => {
-                                handleOpenEditModal(contact);
-                              }}
-                              isActive={contact.isActive}
-                              onToggleActive={async () => {
-                                try {
-                                  const newStatus = !contact.isActive;
-                                  await contactsApi.update(contact.id, {
-                                    isActive: newStatus,
-                                  });
-                                  queryClient.invalidateQueries({
-                                    queryKey: contactsKeys.all,
-                                  });
-                                  queryClient.invalidateQueries({
-                                    queryKey: contactsKeys.detail(contact.id),
-                                  });
-                                  toast.success(
-                                    `Contact ${
-                                      newStatus ? 'activated' : 'deactivated'
-                                    } successfully`
-                                  );
-                                } catch (error) {
-                                  toast.error(
-                                    `Failed to update contact status: ${
-                                      (error as Error).message
-                                    }`
-                                  );
-                                }
-                              }}
-                              onGamingAccounts={() => {
-                                setSidePanelTab('gaming-accounts');
-                                setSelectedContact(contact);
-                                setSelectedContactDetails(null);
-                              }}
-                              onDeals={() => {
-                                setSidePanelTab('deals');
-                                setSelectedContact(contact);
-                                setSelectedContactDetails(null);
-                              }}
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Pagination */}
-                <div className="mt-3 flex items-center justify-between px-2 text-sm">
-                  {/* Left - Showing range */}
-                  <div className="text-muted-foreground">
-                    Showing {startIndex + 1}-{endIndex} of {totalItems}
-                  </div>
-
-                  {/* Right - Navigation controls */}
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setCurrentPage(1)}
-                      disabled={currentPage === 1}
-                      className="h-8 w-8"
-                      title="First page"
-                    >
-                      <ChevronsLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className="h-8 w-8"
-                      title="Previous page"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-
-                    <span className="mx-2 text-sm text-muted-foreground">
-                      Page {currentPage} of {totalPages}
-                    </span>
-
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages || totalPages === 0}
-                      className="h-8 w-8"
-                      title="Next page"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setCurrentPage(totalPages)}
-                      disabled={currentPage === totalPages || totalPages === 0}
-                      className="h-8 w-8"
-                      title="Last page"
-                    >
-                      <ChevronsRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Side Panel Container - Always rendered for animation, width animates */}
-        <div
-          className="flex-shrink-0 overflow-hidden transition-all duration-300 ease-out"
-          style={{ width: selectedContact ? sidePanelWidth : 0 }}
-        >
-          {selectedContact && (
-            <div
-              className="relative bg-background border-l border-border shadow-lg flex h-full"
-              style={{ width: sidePanelWidth }}
-            >
-              {/* Resize Handle */}
-              <div
-                onMouseDown={handleMouseDown}
-                className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-mf-accent/50 active:bg-mf-accent transition-colors group flex items-center justify-center z-10"
-              >
-                <div className="absolute left-[-6px] w-4 h-8 flex items-center justify-center rounded-sm border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                  <GripVertical className="h-3 w-3 text-zinc-400 dark:text-zinc-500" />
-                </div>
-              </div>
-              {/* Panel Content */}
-              <div className="flex-1 flex flex-col overflow-hidden">
-                <SidePanel
-                  contact={selectedContact}
-                  contactDetails={selectedContactDetails}
-                  isLoading={isDetailsLoading}
-                  activeTab={sidePanelTab}
-                  onTabChange={setSidePanelTab}
-                  onClose={() => {
-                    setSelectedContact(null);
-                    setSelectedContactDetails(null);
+                <DataTable
+                  columns={tableColumns}
+                  data={allContacts}
+                  manualSorting
+                  sorting={sortField ? [{ id: sortField, desc: sortDirection === 'desc' }] : []}
+                  onSortingChange={(newSorting: SortingState) => {
+                    if (newSorting.length === 0) {
+                      setSortField(null);
+                    } else {
+                      setSortField(newSorting[0].id as SortField);
+                      setSortDirection(newSorting[0].desc ? 'desc' : 'asc');
+                    }
+                    setResetPageTrigger(p => p + 1);
                   }}
-                  onEdit={() => {
-                    if (selectedContactDetails) {
-                      setEditingContact(selectedContactDetails);
+                  columnVisibility={columnVisibility}
+                  selectedRowId={selectedContact?.id ?? null}
+                  rowClassName={(contact) =>
+                    selectedContact?.id === contact.id
+                      ? 'bg-mf-accent/10'
+                      : 'bg-muted/30'
+                  }
+                  onRowClick={(contact) => {
+                    if (selectedContact?.id === contact.id) {
+                      setSelectedContact(null);
+                      setSelectedContactDetails(null);
+                    } else {
+                      setSidePanelTab('details');
+                      setSelectedContact(contact);
+                      setSelectedContactDetails(null);
                     }
                   }}
-                  onDelete={() => {
-                    setDeletingContact(selectedContact);
-                  }}
+                  pagination
+                  paginationStyle="compact"
+                  pageSize={rowsPerPage}
+                  resetPageDep={resetPageTrigger}
+                  sortable
+                  searchable={false}
+                  loading={false}
                 />
-              </div>
+            )}
             </div>
-          )}
+          </div>
+
+          {/* Side Panel Container - Always rendered for animation, width animates */}
+          <div
+            className="flex-shrink-0 transition-all duration-300 ease-out"
+            style={{ width: selectedContact ? sidePanelWidth : 0 }}
+          >
+            {selectedContact && (
+              <div
+                className="relative bg-background shadow-panel flex h-full"
+                style={{ width: sidePanelWidth }}
+              >
+                {/* Resize Handle */}
+                <div
+                  onMouseDown={handleMouseDown}
+                  className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-border active:bg-border transition-colors group flex items-center justify-center z-10"
+                >
+                </div>
+                {/* Panel Content */}
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  <SidePanel
+                    contact={selectedContact}
+                    contactDetails={selectedContactDetails}
+                    isLoading={isDetailsLoading}
+                    activeTab={sidePanelTab}
+                    onTabChange={setSidePanelTab}
+                    onClose={() => {
+                      setSelectedContact(null);
+                      setSelectedContactDetails(null);
+                    }}
+                    onEdit={() => {
+                      if (selectedContactDetails) {
+                        setEditingContact(selectedContactDetails);
+                      }
+                    }}
+                    onDelete={() => {
+                      setDeletingContact(selectedContact);
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

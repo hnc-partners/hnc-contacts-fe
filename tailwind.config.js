@@ -66,6 +66,9 @@ export default {
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
       },
+      boxShadow: {
+        panel: 'var(--shadow-panel)',
+      },
       borderRadius: {
         lg: 'var(--radius-lg)',
         md: 'var(--radius)',

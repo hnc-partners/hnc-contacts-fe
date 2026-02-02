@@ -50,10 +50,9 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'https://hncms-contacts.scarif-0.duckdns.org',
+        target: 'http://localhost:3002',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
-        secure: true,
         // Inject dev API key for local development
         headers: {
           'x-api-key': 'dev-api-key-change-in-production',

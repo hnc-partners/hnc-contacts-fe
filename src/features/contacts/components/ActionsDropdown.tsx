@@ -91,7 +91,7 @@ export function ActionsDropdown({
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onSelect={onToggleActive}
-          className={isActive ? 'text-orange-600' : 'text-green-600'}
+          className={isActive ? 'text-warning' : 'text-success'}
         >
           {isActive ? 'Deactivate' : 'Activate'}
         </DropdownMenuItem>

@@ -24,7 +24,7 @@ import type {
   UpdatePartnerDto,
   UpdateHncMemberDto,
   GamingAccount,
-} from '../types/contacts';
+} from '@/types/contacts';
 import { getAuthItem } from '@hnc-partners/auth-context';
 
 // In development, use /api proxy to avoid CORS issues

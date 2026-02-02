@@ -2,9 +2,10 @@
  * DeleteContactModal Component
  *
  * Confirmation modal for deleting a contact.
+ * Uses ConfirmDialog from ui-components shared composite.
  */
 
-import { ConfirmModal } from '@/components/Modal';
+import { ConfirmDialog } from '@hnc-partners/ui-components';
 import type { Contact } from '../types';
 
 interface DeleteContactModalProps {
@@ -23,7 +24,7 @@ export function DeleteContactModal({
   onConfirm,
 }: DeleteContactModalProps) {
   return (
-    <ConfirmModal
+    <ConfirmDialog
       isOpen={isOpen}
       onClose={onClose}
       onConfirm={onConfirm}

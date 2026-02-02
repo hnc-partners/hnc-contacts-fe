@@ -13,7 +13,7 @@ export * from '@/types/contacts';
 export type SidePanelTab = 'details' | 'gaming-accounts' | 'deals' | 'status' | 'notes';
 
 // Sort Types
-export type SortField = 'displayName' | null;
+export type SortField = 'displayName' | 'firstName' | 'lastName' | 'joinDate' | null;
 export type SortDirection = 'asc' | 'desc';
 
 // Filter Options
@@ -47,5 +47,3 @@ export const JOIN_DATE_OPTIONS: FilterOption[] = [
   { value: 'last_year', label: 'Last Year' },
 ];
 
-// Rows per page options
-export const ROWS_PER_PAGE_OPTIONS = [10, 20, 50];

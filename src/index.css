@@ -17,19 +17,19 @@
   --muted: 240 4.8% 95.9%;
   --muted-foreground: 240 3.8% 46.1%;
   --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
+  --accent-foreground: 163 71% 82%;   /* = --mf-accent */
   --secondary: 240 4.8% 95.9%;
   --secondary-foreground: 240 5.9% 10%;
 
-  /* Brand - Steel Blue (V3 Design System) */
-  --primary: 206 31% 39%;
-  --primary-foreground: 0 0% 100%;
+  /* Primary = MF Accent (Soft Mint) per PLAN-020 */
+  --primary: 163 71% 82%;
+  --primary-foreground: 163 50% 25%;
   --brand: 206 31% 39%;
   --brand-foreground: 0 0% 100%;
 
-  /* MF Accent - Teal (contacts-fe identity color) */
-  --mf-accent: 173 80% 40%;           /* teal-500 #14b8a6 */
-  --mf-accent-foreground: 0 0% 100%;
+  /* MF Accent - Soft Mint (contacts-fe identity color) */
+  --mf-accent: 163 71% 82%;
+  --mf-accent-foreground: 163 50% 25%;
 
   /* Semantic - Light Mode (muted/opal variants) */
   --destructive: 0 60% 47%;
@@ -44,7 +44,12 @@
   /* Utility */
   --border: 240 5.9% 90%;
   --input: 240 5.9% 90%;
-  --ring: 206 31% 39%;
+  --ring: 163 71% 82%;
+
+  /* Shadows */
+  --shadow-panel-color: 0, 0, 0;
+  --shadow-panel-opacity: 0.05;
+  --shadow-panel: -4px 0 15px rgba(var(--shadow-panel-color), var(--shadow-panel-opacity));
 
   /* Radius */
   --radius: 0.5rem;
@@ -63,20 +68,20 @@
   --popover-foreground: 0 0% 88%;   /* #e1e1e1 */
   --muted: 0 0% 18%;                /* #2d2d2d - subtle backgrounds */
   --muted-foreground: 0 0% 61%;     /* #9b9b9b - secondary text */
-  --accent: 0 0% 18%;               /* #2d2d2d */
-  --accent-foreground: 0 0% 88%;    /* #e1e1e1 */
+  --accent: 0 0% 18%;                /* #2d2d2d */
+  --accent-foreground: 163 50% 55%;  /* = --mf-accent dark */
   --secondary: 0 0% 18%;            /* #2d2d2d */
   --secondary-foreground: 0 0% 88%; /* #e1e1e1 */
 
-  /* Brand - Steel Blue (slightly lighter for dark mode) */
-  --primary: 206 31% 50%;
-  --primary-foreground: 0 0% 100%;
+  /* Primary = MF Accent (Soft Mint, dark) per PLAN-020 */
+  --primary: 163 50% 55%;
+  --primary-foreground: 163 60% 15%;
   --brand: 206 31% 50%;
   --brand-foreground: 0 0% 100%;
 
-  /* MF Accent - Teal (brighter for dark mode) */
-  --mf-accent: 174 62% 47%;           /* teal-400 #2dd4bf */
-  --mf-accent-foreground: 0 0% 100%;
+  /* MF Accent - Soft Mint (brighter for dark mode) */
+  --mf-accent: 163 50% 55%;
+  --mf-accent-foreground: 163 60% 15%;
 
   /* Semantic - Dark Mode (brighter for contrast) */
   --destructive: 0 76% 62%;
@@ -88,10 +93,15 @@
   --info: 213 75% 63%;
   --info-foreground: 0 0% 100%;
 
+  /* Shadows */
+  --shadow-panel-color: 255, 255, 255;
+  --shadow-panel-opacity: 0.15;
+  --shadow-panel: -6px 0 20px rgba(var(--shadow-panel-color), var(--shadow-panel-opacity));
+
   /* Utility */
   --border: 0 0% 18%;               /* #2f2f2f - subtle borders */
   --input: 0 0% 18%;                /* #2f2f2f */
-  --ring: 206 31% 50%;
+  --ring: 163 50% 55%;
 }
 
 /* Media query fallback for portals (Radix UI components) */
@@ -107,15 +117,15 @@
     --muted: 0 0% 18%;
     --muted-foreground: 0 0% 61%;
     --accent: 0 0% 18%;
-    --accent-foreground: 0 0% 88%;
+    --accent-foreground: 163 50% 55%;
     --secondary: 0 0% 18%;
     --secondary-foreground: 0 0% 88%;
-    --primary: 206 31% 50%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 163 50% 55%;
+    --primary-foreground: 163 60% 15%;
     --brand: 206 31% 50%;
     --brand-foreground: 0 0% 100%;
-    --mf-accent: 174 62% 47%;
-    --mf-accent-foreground: 0 0% 100%;
+    --mf-accent: 163 50% 55%;
+    --mf-accent-foreground: 163 60% 15%;
     --destructive: 0 76% 62%;
     --destructive-foreground: 0 0% 100%;
     --success: 152 33% 50%;
@@ -126,7 +136,7 @@
     --info-foreground: 0 0% 100%;
     --border: 0 0% 18%;
     --input: 0 0% 18%;
-    --ring: 206 31% 50%;
+    --ring: 163 50% 55%;
   }
 }
 
