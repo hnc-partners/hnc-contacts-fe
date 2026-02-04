@@ -8,7 +8,6 @@
 export { ContactsPage } from './components/ContactsPage';
 
 // Sub-components (for direct use if needed)
-export { ActionsDropdown } from './components/ActionsDropdown';
 export { DeleteContactModal } from './components/DeleteContactModal';
 export { DetailRow } from './components/DetailRow';
 export { SidePanel } from './components/SidePanel';

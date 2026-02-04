@@ -6,8 +6,8 @@
  */
 
 import type { ColumnDef } from '@tanstack/react-table';
+import { ActionsDropdown } from '@hnc-partners/ui-components';
 import type { Contact } from '../types';
-import { ActionsDropdown } from './ActionsDropdown';
 import { formatDate } from '@/lib/utils';
 
 export interface ContactsColumnCallbacks {
@@ -15,9 +15,6 @@ export interface ContactsColumnCallbacks {
   onEdit: (contact: Contact) => void;
   onCopy: (contact: Contact) => void;
   onDelete: (contact: Contact) => void;
-  onToggleActive: (contact: Contact) => void;
-  onGamingAccounts: (contact: Contact) => void;
-  onDeals: (contact: Contact) => void;
 }
 
 export function createColumns(callbacks: ContactsColumnCallbacks): ColumnDef<Contact, unknown>[] {
@@ -83,10 +80,6 @@ export function createColumns(callbacks: ContactsColumnCallbacks): ColumnDef<Con
             onEdit={() => callbacks.onEdit(row.original)}
             onCopy={() => callbacks.onCopy(row.original)}
             onDelete={() => callbacks.onDelete(row.original)}
-            isActive={row.original.isActive}
-            onToggleActive={() => callbacks.onToggleActive(row.original)}
-            onGamingAccounts={() => callbacks.onGamingAccounts(row.original)}
-            onDeals={() => callbacks.onDeals(row.original)}
           />
         </div>
       ),

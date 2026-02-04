@@ -12,11 +12,10 @@
   },
   "dependencies": {
     "@hnc-partners/auth-context": "^0.1.2",
-    "@hnc-partners/ui-components": "0.2.10",
+    "@hnc-partners/ui-components": "^0.2.30",
     "@hookform/resolvers": "^5.2.2",
     "@tanstack/react-query": "^5.62.16",
     "@tanstack/react-router": "^1.157.15",
-    "@tanstack/react-table": "^8.21.3",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",
@@ -29,6 +28,8 @@
   },
   "devDependencies": {
     "@module-federation/vite": "^1.1.9",
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/router-plugin": "^1.158.0",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^4.3.4",

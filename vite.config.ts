@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
 import { federation } from '@module-federation/vite';
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 import { resolve } from 'path';
@@ -13,6 +14,7 @@ export default defineConfig({
     ? 'https://hncms-contacts-fe.scarif-0.duckdns.org/'
     : '/',
   plugins: [
+    TanStackRouterVite(),
     react(),
     // Only enable Module Federation for production builds
     // In dev mode, run as standalone app (faster, simpler)
@@ -66,5 +68,6 @@ export default defineConfig({
     target: 'esnext',
     minify: isProduction,     // Minify in production (esbuild)
     cssCodeSplit: false,
+    assetsInlineLimit: 0,     // Ensure assets load correctly in MF environments
   },
 });
