@@ -9,6 +9,12 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
   Button,
   DataTable,
   FilterDropdown,
@@ -187,27 +193,6 @@ export function ContactsPage() {
       }
     },
     onDelete: (contact) => setDeletingContact(contact),
-    onToggleActive: async (contact) => {
-      try {
-        const newStatus = !contact.isActive;
-        await contactsApi.update(contact.id, { isActive: newStatus });
-        queryClient.invalidateQueries({ queryKey: contactsKeys.all });
-        queryClient.invalidateQueries({ queryKey: contactsKeys.detail(contact.id) });
-        toast.success(`Contact ${newStatus ? 'activated' : 'deactivated'} successfully`);
-      } catch (error) {
-        toast.error(`Failed to update contact status: ${(error as Error).message}`);
-      }
-    },
-    onGamingAccounts: (contact) => {
-      setSidePanelTab('gaming-accounts');
-      setSelectedContact(contact);
-      setSelectedContactDetails(null);
-    },
-    onDeals: (contact) => {
-      setSidePanelTab('deals');
-      setSelectedContact(contact);
-      setSelectedContactDetails(null);
-    },
   }), []);  // Empty deps - callbacks use closures over state setters which are stable
 
   // Handlers
@@ -328,16 +313,19 @@ export function ContactsPage() {
           </div>
 
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-4">
-            <a
-              href="/"
-              className="flex items-center gap-1 hover:text-foreground transition-colors"
-            >
-              <Home className="h-4 w-4" />
-            </a>
-            <span>/</span>
-            <span className="text-foreground">Contacts</span>
-          </nav>
+          <Breadcrumb className="mb-4">
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/">
+                  <Home className="h-4 w-4" />
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Contacts</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </div>
 
         {/* Content Row - Filter/Table + Side Panel (panel aligns with filter bar) */}
@@ -562,3 +550,5 @@ export function ContactsPage() {
     </>
   );
 }
+
+export default ContactsPage;
