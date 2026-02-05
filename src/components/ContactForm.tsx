@@ -1,9 +1,9 @@
-import { useEffect, useImperativeHandle, forwardRef } from 'react';
+import { useEffect, useImperativeHandle, forwardRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { AlertCircle, User, Building2 } from 'lucide-react';
-import { Button } from '@hnc-partners/ui-components';
+import { User, Building2, ChevronDown } from 'lucide-react';
+import { Button, Calendar, Popover, PopoverContent, PopoverTrigger, FormInput } from '@hnc-partners/ui-components';
 import type { CreateContactDto, ContactWithDetails, UpdateContactDto } from '@/types/contacts';
 
 // ===== VALIDATION SCHEMA =====
@@ -49,6 +49,50 @@ const contactFormSchema = z.object({
 });
 
 type ContactFormData = z.infer<typeof contactFormSchema>;
+
+// ===== JOIN DATE PICKER (Popover + Calendar) =====
+
+function JoinDatePicker({ value, onChange }: { value: string; onChange: (iso: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const date = value ? new Date(value + 'T00:00:00') : undefined;
+  const currentYear = new Date().getFullYear();
+
+  const handleSelect = (d: Date | undefined) => {
+    if (d) {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      onChange(`${yyyy}-${mm}-${dd}`);
+    } else {
+      onChange('');
+    }
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={`w-full justify-between font-normal ${!date ? 'text-muted-foreground' : ''}`}
+        >
+          {date ? date.toLocaleDateString() : 'Pick date'}
+          <ChevronDown className="h-4 w-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={handleSelect}
+          captionLayout="dropdown-buttons"
+          fromYear={currentYear - 50}
+          toYear={currentYear}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 // ===== REF HANDLE =====
 
@@ -267,20 +311,13 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
                 First Name
                 <span className="text-destructive ml-1">*</span>
               </label>
-              <input
+              <FormInput
                 type="text"
                 {...register('firstName')}
-                className={`w-full py-2 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
-                  errors.firstName ? 'border-destructive' : 'border-input'
-                }`}
                 placeholder="Enter first name"
+                error={!!touchedFields.firstName && !!errors.firstName}
+                errorMessage={errors.firstName?.message}
               />
-              {touchedFields.firstName && errors.firstName && (
-                <p className="mt-1 text-sm text-destructive flex items-center gap-1">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  {errors.firstName.message}
-                </p>
-              )}
             </div>
 
             {/* Last Name */}
@@ -288,10 +325,9 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <label className="block text-sm font-medium text-foreground mb-1">
                 Last Name
               </label>
-              <input
+              <FormInput
                 type="text"
                 {...register('lastName')}
-                className="w-full py-2 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Enter last name"
               />
             </div>
@@ -301,20 +337,13 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <label className="block text-sm font-medium text-foreground mb-1">
                 Email
               </label>
-              <input
+              <FormInput
                 type="email"
                 {...register('email')}
-                className={`w-full py-2 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
-                  errors.email ? 'border-destructive' : 'border-input'
-                }`}
                 placeholder="Enter email address"
+                error={!!touchedFields.email && !!errors.email}
+                errorMessage={errors.email?.message}
               />
-              {touchedFields.email && errors.email && (
-                <p className="mt-1 text-sm text-destructive flex items-center gap-1">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  {errors.email.message}
-                </p>
-              )}
             </div>
 
             {/* Mobile */}
@@ -322,10 +351,9 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <label className="block text-sm font-medium text-foreground mb-1">
                 Mobile
               </label>
-              <input
+              <FormInput
                 type="tel"
                 {...register('mobileNumber')}
-                className="w-full py-2 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Enter mobile number"
               />
             </div>
@@ -335,10 +363,9 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <label className="block text-sm font-medium text-foreground mb-1">
                 Country
               </label>
-              <input
+              <FormInput
                 type="text"
                 {...register('country')}
-                className="w-full py-2 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Enter country"
               />
             </div>
@@ -348,10 +375,15 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <label className="block text-sm font-medium text-foreground mb-1">
                 Join Date
               </label>
-              <input
-                type="date"
-                {...register('joinDate')}
-                className="w-full py-2 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              <Controller
+                control={control}
+                name="joinDate"
+                render={({ field }) => (
+                  <JoinDatePicker
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                  />
+                )}
               />
             </div>
           </div>
@@ -363,20 +395,13 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
                 Legal Name
                 <span className="text-destructive ml-1">*</span>
               </label>
-              <input
+              <FormInput
                 type="text"
                 {...register('legalName')}
-                className={`w-full py-2 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
-                  errors.legalName ? 'border-destructive' : 'border-input'
-                }`}
                 placeholder="Enter legal name"
+                error={!!touchedFields.legalName && !!errors.legalName}
+                errorMessage={errors.legalName?.message}
               />
-              {touchedFields.legalName && errors.legalName && (
-                <p className="mt-1 text-sm text-destructive flex items-center gap-1">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  {errors.legalName.message}
-                </p>
-              )}
             </div>
 
             {/* Tax ID */}
@@ -384,10 +409,9 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <label className="block text-sm font-medium text-foreground mb-1">
                 Tax ID
               </label>
-              <input
+              <FormInput
                 type="text"
                 {...register('taxId')}
-                className="w-full py-2 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Enter tax ID"
               />
             </div>
@@ -397,10 +421,9 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <label className="block text-sm font-medium text-foreground mb-1">
                 Registration Number
               </label>
-              <input
+              <FormInput
                 type="text"
                 {...register('registrationNumber')}
-                className="w-full py-2 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Enter registration number"
               />
             </div>
@@ -410,10 +433,9 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <label className="block text-sm font-medium text-foreground mb-1">
                 Country
               </label>
-              <input
+              <FormInput
                 type="text"
                 {...register('country')}
-                className="w-full py-2 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Enter country"
               />
             </div>
@@ -423,10 +445,15 @@ export const ContactForm = forwardRef<ContactFormHandle, ContactFormProps>(
               <label className="block text-sm font-medium text-foreground mb-1">
                 Join Date
               </label>
-              <input
-                type="date"
-                {...register('joinDate')}
-                className="w-full py-2 px-3 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              <Controller
+                control={control}
+                name="joinDate"
+                render={({ field }) => (
+                  <JoinDatePicker
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                  />
+                )}
               />
             </div>
           </div>

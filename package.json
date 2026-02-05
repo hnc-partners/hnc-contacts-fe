@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@hnc-partners/auth-context": "^0.1.2",
-    "@hnc-partners/ui-components": "^0.2.30",
+    "@hnc-partners/ui-components": "^0.2.31",
     "@hookform/resolvers": "^5.2.2",
     "@tanstack/react-query": "^5.62.16",
     "@tanstack/react-router": "^1.157.15",
@@ -28,6 +28,10 @@
   },
   "devDependencies": {
     "@module-federation/vite": "^1.1.9",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/router-plugin": "^1.158.0",
     "@types/react": "^19.0.2",

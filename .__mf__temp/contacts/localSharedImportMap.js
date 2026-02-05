@@ -59,7 +59,7 @@
         ,
           "@tanstack/react-query": {
             name: "@tanstack/react-query",
-            version: "5.90.19",
+            version: "5.90.20",
             scope: ["default"],
             loaded: false,
             from: "contacts",
@@ -89,7 +89,7 @@
         ,
           "react": {
             name: "react",
-            version: "19.2.3",
+            version: "19.2.4",
             scope: ["default"],
             loaded: false,
             from: "contacts",
@@ -119,7 +119,7 @@
         ,
           "react-dom": {
             name: "react-dom",
-            version: "19.2.3",
+            version: "19.2.4",
             scope: ["default"],
             loaded: false,
             from: "contacts",

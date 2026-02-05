@@ -6,7 +6,7 @@ interface ImportMetaEnv {
   readonly VITE_APP_NAME: string;
 }
 
-interface ImportMeta {
+interface ImportMeta { // eslint-disable-line @typescript-eslint/no-unused-vars
   readonly env: ImportMetaEnv;
 }
 

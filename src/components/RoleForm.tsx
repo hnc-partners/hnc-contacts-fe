@@ -2,8 +2,8 @@ import { useImperativeHandle, forwardRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { AlertCircle, Gamepad2, Handshake, Users } from 'lucide-react';
-import { Button } from '@hnc-partners/ui-components';
+import { Gamepad2, Handshake, Users } from 'lucide-react';
+import { Button, FormInput } from '@hnc-partners/ui-components';
 import { CustomSelect } from '@hnc-partners/ui-components';
 import type {
   RoleType,
@@ -118,7 +118,7 @@ interface RoleFormProps {
   contactId: string;
   contactName?: string;
   existingRoleTypes: RoleType[];
-  onSubmit: (roleType: RoleType, data: any) => void;
+  onSubmit: (roleType: RoleType, data: CreatePlayerDto | CreatePartnerDto | CreateHncMemberDto | Record<string, unknown>) => void;
   /** @deprecated No longer used internally - loading state managed by FormModal */
   isLoading?: boolean;
   // Edit mode props
@@ -265,7 +265,7 @@ export const RoleForm = forwardRef<RoleFormHandle, RoleFormProps>(
             playerStatus: data.playerStatus || 'active',
           };
           if (data.preferredCurrency) dto.preferredCurrency = data.preferredCurrency;
-          if (data.paymentMethod) dto.paymentMethod = data.paymentMethod as any;
+          if (data.paymentMethod) dto.paymentMethod = data.paymentMethod as CreatePlayerDto['paymentMethod'];
           onSubmit('player', dto);
         }
       } else if (data.roleType === 'partner') {
@@ -373,20 +373,13 @@ export const RoleForm = forwardRef<RoleFormHandle, RoleFormProps>(
                     Short Name
                     <span className="text-destructive ml-1">*</span>
                   </label>
-                  <input
+                  <FormInput
                     type="text"
                     {...register('shortName')}
-                    className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
-                      errors.shortName ? 'border-destructive' : 'border-input'
-                    }`}
                     placeholder="Enter short name"
+                    error={!!errors.shortName}
+                    errorMessage={errors.shortName?.message}
                   />
-                  {errors.shortName && (
-                    <p className="mt-1 text-sm text-destructive flex items-center gap-1">
-                      <AlertCircle className="h-3.5 w-3.5" />
-                      {errors.shortName.message}
-                    </p>
-                  )}
                 </div>
 
                 <div>
@@ -445,20 +438,13 @@ export const RoleForm = forwardRef<RoleFormHandle, RoleFormProps>(
                     Short Name
                     <span className="text-destructive ml-1">*</span>
                   </label>
-                  <input
+                  <FormInput
                     type="text"
                     {...register('shortName')}
-                    className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
-                      errors.shortName ? 'border-destructive' : 'border-input'
-                    }`}
                     placeholder="Enter short name"
+                    error={!!errors.shortName}
+                    errorMessage={errors.shortName?.message}
                   />
-                  {errors.shortName && (
-                    <p className="mt-1 text-sm text-destructive flex items-center gap-1">
-                      <AlertCircle className="h-3.5 w-3.5" />
-                      {errors.shortName.message}
-                    </p>
-                  )}
                 </div>
 
                 <div>
@@ -509,20 +495,13 @@ export const RoleForm = forwardRef<RoleFormHandle, RoleFormProps>(
                     Full Name
                     <span className="text-destructive ml-1">*</span>
                   </label>
-                  <input
+                  <FormInput
                     type="text"
                     {...register('fullName')}
-                    className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
-                      errors.fullName ? 'border-destructive' : 'border-input'
-                    }`}
                     placeholder="Enter full name"
+                    error={!!errors.fullName}
+                    errorMessage={errors.fullName?.message}
                   />
-                  {errors.fullName && (
-                    <p className="mt-1 text-sm text-destructive flex items-center gap-1">
-                      <AlertCircle className="h-3.5 w-3.5" />
-                      {errors.fullName.message}
-                    </p>
-                  )}
                 </div>
 
                 <div>
@@ -530,21 +509,14 @@ export const RoleForm = forwardRef<RoleFormHandle, RoleFormProps>(
                     Member Code
                     <span className="text-destructive ml-1">*</span>
                   </label>
-                  <input
+                  <FormInput
                     type="text"
                     {...register('memberCode')}
-                    className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring ${
-                      errors.memberCode ? 'border-destructive' : 'border-input'
-                    }`}
                     placeholder="e.g., JD01"
                     disabled={isEditMode}
+                    error={!!errors.memberCode}
+                    errorMessage={errors.memberCode?.message}
                   />
-                  {errors.memberCode && (
-                    <p className="mt-1 text-sm text-destructive flex items-center gap-1">
-                      <AlertCircle className="h-3.5 w-3.5" />
-                      {errors.memberCode.message}
-                    </p>
-                  )}
                 </div>
 
                 <div>
@@ -565,12 +537,6 @@ export const RoleForm = forwardRef<RoleFormHandle, RoleFormProps>(
                       />
                     )}
                   />
-                  {errors.memberType && (
-                    <p className="mt-1 text-sm text-destructive flex items-center gap-1">
-                      <AlertCircle className="h-3.5 w-3.5" />
-                      {errors.memberType.message}
-                    </p>
-                  )}
                 </div>
 
                 {!isEditMode && (
@@ -579,28 +545,20 @@ export const RoleForm = forwardRef<RoleFormHandle, RoleFormProps>(
                       Joined Date
                       <span className="text-destructive ml-1">*</span>
                     </label>
-                    <input
+                    <FormInput
                       type="date"
                       {...register('joinedDate')}
-                      className={`w-full h-9 px-3 rounded-md border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
-                        errors.joinedDate ? 'border-destructive' : 'border-input'
-                      }`}
+                      error={!!errors.joinedDate}
+                      errorMessage={errors.joinedDate?.message}
                     />
-                    {errors.joinedDate && (
-                      <p className="mt-1 text-sm text-destructive flex items-center gap-1">
-                        <AlertCircle className="h-3.5 w-3.5" />
-                        {errors.joinedDate.message}
-                      </p>
-                    )}
                   </div>
                 )}
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-1">Department</label>
-                  <input
+                  <FormInput
                     type="text"
                     {...register('department')}
-                    className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                     placeholder="Enter department"
                   />
                 </div>

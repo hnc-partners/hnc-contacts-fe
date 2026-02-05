@@ -96,9 +96,9 @@ export function ContactsPage() {
   const [joinDateFilter, setJoinDateFilter] = useState('');
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
-  // Pagination State
+  // Pagination State (server-side)
+  const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [resetPageTrigger, setResetPageTrigger] = useState(0);
 
   // Sorting State
   const [sortField, setSortField] = useState<SortField>(null);
@@ -117,13 +117,14 @@ export function ContactsPage() {
   // Compute join date range from filter value
   const joinDateRange = useMemo(() => getJoinDateRange(joinDateFilter), [joinDateFilter]);
 
-  // Query hooks
+  // Query hooks - server-side pagination
   const { data: contactsResponse, isLoading, error } = useContacts({
     isActive:
       filterStatus === 'active' ? true : filterStatus === 'inactive' ? false : undefined,
     contactType: filterType || undefined,
     search: searchQuery || undefined,
-    limit: 100,
+    page: currentPage,
+    limit: rowsPerPage,
     ...joinDateRange,
   });
 
@@ -233,7 +234,7 @@ export function ContactsPage() {
     setFilterStatus('');
     setFilterType('');
     setJoinDateFilter('');
-    setResetPageTrigger(p => p + 1);
+    setCurrentPage(1);
   };
 
   const hasActiveFilters = searchQuery || filterStatus || filterType || joinDateFilter;
@@ -340,7 +341,7 @@ export function ContactsPage() {
               searchValue={searchQuery}
               onSearchChange={(v) => {
                 setSearchQuery(v);
-                setResetPageTrigger(p => p + 1);
+                setCurrentPage(1);
               }}
               filtersExpanded={filtersExpanded}
               onToggleFilters={() => setFiltersExpanded(!filtersExpanded)}
@@ -352,7 +353,7 @@ export function ContactsPage() {
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={(v) => {
                 setRowsPerPage(v);
-                setResetPageTrigger(p => p + 1);
+                setCurrentPage(1);
               }}
               onClearFilters={clearFilters}
               filters={
@@ -363,7 +364,7 @@ export function ContactsPage() {
                     options={TYPE_OPTIONS}
                     onChange={(v) => {
                       setFilterType(v as ContactType | '');
-                      setResetPageTrigger(p => p + 1);
+                      setCurrentPage(1);
                     }}
                   />
                   <FilterDropdown
@@ -372,7 +373,7 @@ export function ContactsPage() {
                     options={STATUS_OPTIONS}
                     onChange={(v) => {
                       setFilterStatus(v as ContactStatus | '');
-                      setResetPageTrigger(p => p + 1);
+                      setCurrentPage(1);
                     }}
                   />
                   <FilterDropdown
@@ -381,7 +382,7 @@ export function ContactsPage() {
                     options={JOIN_DATE_OPTIONS}
                     onChange={(v) => {
                       setJoinDateFilter(v);
-                      setResetPageTrigger(p => p + 1);
+                      setCurrentPage(1);
                     }}
                   />
                 </>
@@ -445,7 +446,7 @@ export function ContactsPage() {
                       setSortField(newSorting[0].id as SortField);
                       setSortDirection(newSorting[0].desc ? 'desc' : 'asc');
                     }
-                    setResetPageTrigger(p => p + 1);
+                    setCurrentPage(1);
                   }}
                   columnVisibility={columnVisibility}
                   selectedRowId={selectedContact?.id ?? null}
@@ -467,7 +468,11 @@ export function ContactsPage() {
                   pagination
                   paginationStyle="compact"
                   pageSize={rowsPerPage}
-                  resetPageDep={resetPageTrigger}
+                  manualPagination
+                  pageCount={contactsResponse?.meta?.totalPages ?? 1}
+                  totalRows={contactsResponse?.meta?.total ?? 0}
+                  currentPage={currentPage}
+                  onPageChange={setCurrentPage}
                   sortable
                   searchable={false}
                   loading={false}

@@ -7,7 +7,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Button, ConfirmDialog, FormModal, SidePanelShell } from '@hnc-partners/ui-components';
+import { Button, ConfirmDialog, DetailRow, FormModal, SidePanelShell } from '@hnc-partners/ui-components';
 import type { SidePanelShellTab } from '@hnc-partners/ui-components';
 import {
   Loader2,
@@ -26,7 +26,6 @@ import type { RoleFormHandle } from '@/components/RoleForm';
 import { CustomSelect } from '@hnc-partners/ui-components';
 import { contactsApi } from '../api/contacts-api';
 import { StatusBadge } from './StatusBadge';
-import { DetailRow } from './DetailRow';
 import {
   useContactRoles,
   useContactGamingAccounts,
@@ -232,7 +231,7 @@ export function SidePanel({
         `Contact ${pendingStatus === 'active' ? 'activated' : 'deactivated'} successfully`
       );
       setPendingStatus('');
-    } catch (error) {
+    } catch {
       toast.error('Failed to update status');
     } finally {
       setIsStatusChanging(false);
@@ -247,7 +246,7 @@ export function SidePanel({
     setIsAddRoleModalOpen(false);
   };
 
-  const handleUpdateRole = (roleType: RoleType, data: any) => {
+  const handleUpdateRole = (roleType: RoleType, data: Record<string, unknown>) => {
     if (!editingRole) return;
     editRole(roleType, editingRole.role.id, data);
     setEditingRole(null);
@@ -437,36 +436,30 @@ export function SidePanel({
                       Person Details
                     </h4>
                     <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <DetailRow
-                          label="First Name"
-                          value={contactDetails.personDetails.firstName}
-                        />
-                        <DetailRow
-                          label="Last Name"
-                          value={contactDetails.personDetails.lastName || '\u2014'}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <DetailRow
-                          label="Email"
-                          value={contactDetails.personDetails.email || '\u2014'}
-                        />
-                        <DetailRow
-                          label="Mobile"
-                          value={contactDetails.personDetails.mobileNumber || '\u2014'}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <DetailRow
-                          label="Country"
-                          value={contactDetails.personDetails.country || '\u2014'}
-                        />
-                        <DetailRow
-                          label="Area"
-                          value={contactDetails.personDetails.area || '\u2014'}
-                        />
-                      </div>
+                      <DetailRow
+                        label="First Name"
+                        value={contactDetails.personDetails.firstName}
+                      />
+                      <DetailRow
+                        label="Last Name"
+                        value={contactDetails.personDetails.lastName || '\u2014'}
+                      />
+                      <DetailRow
+                        label="Email"
+                        value={contactDetails.personDetails.email || '\u2014'}
+                      />
+                      <DetailRow
+                        label="Mobile"
+                        value={contactDetails.personDetails.mobileNumber || '\u2014'}
+                      />
+                      <DetailRow
+                        label="Country"
+                        value={contactDetails.personDetails.country || '\u2014'}
+                      />
+                      <DetailRow
+                        label="Area"
+                        value={contactDetails.personDetails.area || '\u2014'}
+                      />
                     </div>
                   </div>
                 )}
