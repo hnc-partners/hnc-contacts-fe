@@ -240,15 +240,18 @@ export function SidePanel({
 
   const handleAddRole = (
     roleType: RoleType,
-    data: CreatePlayerDto | CreatePartnerDto | CreateHncMemberDto
+    data: CreatePlayerDto | CreatePartnerDto | CreateHncMemberDto | Record<string, unknown>
   ) => {
-    addRole(roleType, data);
+    addRole(roleType, data as CreatePlayerDto | CreatePartnerDto | CreateHncMemberDto);
     setIsAddRoleModalOpen(false);
   };
 
-  const handleUpdateRole = (roleType: RoleType, data: Record<string, unknown>) => {
+  const handleUpdateRole = (
+    roleType: RoleType,
+    data: CreatePlayerDto | CreatePartnerDto | CreateHncMemberDto | Record<string, unknown>
+  ) => {
     if (!editingRole) return;
-    editRole(roleType, editingRole.role.id, data);
+    editRole(roleType, editingRole.role.id, data as Record<string, unknown>);
     setEditingRole(null);
   };
 
