@@ -7,6 +7,9 @@ import { resolve } from 'path';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+// API target - default to deployed URL, override via env for local dev
+const API_TARGET = process.env.VITE_API_TARGET || 'https://hncms-contacts.scarif-0.duckdns.org';
+
 // https://vite.dev/config/
 export default defineConfig({
   // Production base URL for MF chunk resolution
@@ -48,14 +51,14 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5175,
+    port: 5172,
     host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3002',
+        target: API_TARGET,
         changeOrigin: true,
+        secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''),
-        // Inject dev API key for local development
         headers: {
           'x-api-key': 'dev-api-key-change-in-production',
         },
