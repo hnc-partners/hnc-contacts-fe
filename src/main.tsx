@@ -7,6 +7,12 @@ import { AuthProvider, MockAuthProvider } from '@hnc-partners/auth-context';
 import { routeTree } from './routeTree.gen';
 import './index.css';
 
+// Standalone dev mode: load shell theme vars so hsl(var(--background)) etc. resolve.
+// In production, shell owns :root theming via index.css — this import is dead-code eliminated.
+if (import.meta.env.DEV) {
+  await import('@hnc-partners/ui-components/styles/dev-theme.css');
+}
+
 // Standalone mode detection - shell provides AuthProvider in federated mode
 const isStandalone = !window.__SHELL__;
 
