@@ -36,3 +36,4 @@ pnpm-debug.log*
 
 # Artifacts (screenshots, etc.)
 artifacts/
+_bmad/
