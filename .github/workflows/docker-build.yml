@@ -8,9 +8,6 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  CONTAINER_NAME: hnc-ms-contacts-fe
-  CONTAINER_PORT: 4003
-  TRAEFIK_HOST: hncms-contacts-fe.scarif-0.duckdns.org
 
 jobs:
   build-and-push:
@@ -73,58 +70,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           provenance: false
-
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - name: Deploy to server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            set -e
-
-            # Login to GHCR
-            echo "${{ secrets.GHCR_TOKEN }}" | podman login ghcr.io -u ${{ github.actor }} --password-stdin
-
-            # Pull new image
-            podman pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-
-            # Stop and remove existing container (ignore errors if not exists)
-            podman stop ${{ env.CONTAINER_NAME }} 2>/dev/null || true
-            podman rm ${{ env.CONTAINER_NAME }} 2>/dev/null || true
-
-            # Run new container with Traefik labels
-            podman run -d \
-              --name ${{ env.CONTAINER_NAME }} \
-              --restart unless-stopped \
-              --network host \
-              -e PORT=${{ env.CONTAINER_PORT }} \
-              --label "traefik.enable=true" \
-              --label "traefik.http.routers.${{ env.CONTAINER_NAME }}.rule=Host(\`${{ env.TRAEFIK_HOST }}\`)" \
-              --label "traefik.http.routers.${{ env.CONTAINER_NAME }}.entrypoints=web" \
-              --label "traefik.http.services.${{ env.CONTAINER_NAME }}.loadbalancer.server.port=${{ env.CONTAINER_PORT }}" \
-              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-
-            # Cleanup dangling images
-            podman image prune -f
-
-            # Verify container is running
-            sleep 5
-            podman ps | grep ${{ env.CONTAINER_NAME }} && echo "Deploy successful!" || (echo "Container failed to start" && exit 1)
-
-      - name: Deployment summary
-        run: |
-          echo "## Deployment Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image**: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Container**: \`${{ env.CONTAINER_NAME }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **URL**: https://${{ env.TRAEFIK_HOST }}" >> $GITHUB_STEP_SUMMARY
 
   cleanup:
     needs: build-and-push
