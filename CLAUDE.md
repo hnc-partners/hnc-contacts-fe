@@ -7,7 +7,7 @@ Micro-frontend for contact/participant management.
 | Aspect | Value |
 |--------|-------|
 | **Type** | MF Remote |
-| **Dev Port** | 5175 |
+| **Dev Port** | 5172 |
 | **Accent Color** | Teal (#14b8a6) |
 | **Backend API** | https://hncms-contacts.scarif-0.duckdns.org |
 | **MF Plugin** | @module-federation/vite |
@@ -46,7 +46,7 @@ Use `text-mf-accent`, `bg-mf-accent/10` - NOT hardcoded Tailwind colors.
 ## Commands
 
 ```bash
-pnpm dev          # Start dev server (port 5175)
+pnpm dev          # Start dev server (port 5172)
 pnpm build        # Build for production
 pnpm typecheck    # TypeScript checking
 pnpm test         # Playwright tests
