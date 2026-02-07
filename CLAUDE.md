@@ -68,7 +68,7 @@ pnpm test         # Playwright tests
 - **Dropdowns**: Uses @radix-ui/react-dropdown-menu
 - **Toasts**: Uses sonner for notifications
 
-## BMAD Agents
+## Agents
 
 | Agent | When to Invoke |
 |-------|----------------|
